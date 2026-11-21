@@ -1,0 +1,8 @@
+crons:
+  - name: complaint-recap
+    description: "Kirim rekap anonim jumlah pengaduan bulan lalu ke Google Sheets tiap tgl 1 pukul 08.00 WIB"
+    cron: "0 1 1 * *"
+    endpoint: "{{BASE_URL}}/api/cron/complaint-recap"
+    method: POST
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    enabled: true
