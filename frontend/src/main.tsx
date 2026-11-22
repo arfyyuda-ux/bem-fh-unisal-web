@@ -14,7 +14,7 @@ document.addEventListener(
     const el = event.target
     if (el instanceof HTMLImageElement && !el.dataset.fallback) {
       el.dataset.fallback = '1'
-      el.src = '/images/placeholder.svg'
+      el.src = `${import.meta.env.BASE_URL}images/placeholder.svg`
     }
   },
   true,
@@ -23,7 +23,7 @@ document.addEventListener(
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
         <App />
         <Toaster richColors />
       </BrowserRouter>

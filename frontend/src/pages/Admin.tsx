@@ -171,7 +171,7 @@ export default function Admin() {
   if (!isLoggedIn) return <main data-testid="admin-login-page" className="flex min-h-screen items-center justify-center bg-[#2d070d] p-5 text-white">
     <form data-testid="admin-login-form" onSubmit={(event) => { event.preventDefault(); loginMutation.mutate(); }} className="w-full max-w-md rounded bg-white p-8 text-[#2d070d] shadow-2xl md:p-12">
       <Link data-testid="admin-login-back-link" to="/" className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[#8b5b60]"><ArrowLeft size={14} />Situs publik</Link>
-      <img src="/logo-bem.png" alt="Logo BEM FH UNISAL" className="mt-10 h-16 w-16 object-contain" />
+      <img src={`${import.meta.env.BASE_URL}logo-bem.png`} alt="Logo BEM FH UNISAL" className="mt-10 h-16 w-16 object-contain" />
       <h1 data-testid="admin-login-title" className="mt-6 font-display text-5xl text-[#4A070E]">Ruang kerja.</h1>
       <p className="mt-3 text-sm leading-6 text-[#4c3737]/60">Panel pengurus BEM FH UNISAL. Masuk untuk mengelola seluruh konten website.</p>
       <label data-testid="admin-email-field" className="field-label dark-field mt-8">Email<input data-testid="admin-email-input" type="email" required value={login.email} onChange={(event) => setLogin({ ...login, email: event.target.value })} /></label>

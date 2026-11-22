@@ -12,6 +12,8 @@ const apiTarget = process.env.VITE_API_PROXY_TARGET ?? "http://localhost:8001";
 // https://vite.dev/config/
 export default defineConfig(() => {
   return {
+    // Subpath deploy (mis. GitHub Pages: VITE_BASE=/nama-repo/). Default "/".
+    base: process.env.VITE_BASE ?? "/",
     plugins: [
       react(),
       tailwindcss(),
