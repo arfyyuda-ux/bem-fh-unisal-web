@@ -124,7 +124,7 @@ function PasswordForm() {
   return <form data-testid="admin-password-form" onSubmit={(event) => { event.preventDefault(); change.mutate(); }} className="mt-8 grid gap-4 rounded bg-white p-6 sm:grid-cols-2">
     <p className="font-display text-2xl text-[#4A070E] sm:col-span-2">Ganti password admin</p>
     <label className="field-label">Password lama<input data-testid="admin-current-password-input" type="password" required value={form.current_password} onChange={(e) => setForm({ ...form, current_password: e.target.value })} /></label>
-    <label className="field-label">Password baru (min. 10 karakter)<input data-testid="admin-new-password-input" type="password" required minLength={10} value={form.new_password} onChange={(e) => setForm({ ...form, new_password: e.target.value })} /></label>
+    <label className="field-label">Password baru (12–128 karakter)<input data-testid="admin-new-password-input" type="password" required minLength={12} maxLength={128} value={form.new_password} onChange={(e) => setForm({ ...form, new_password: e.target.value })} /></label>
     <button data-testid="admin-password-save-button" disabled={change.isPending} className="admin-primary justify-center sm:col-span-2"><Shield size={15} />Perbarui password</button>
   </form>;
 }

@@ -1,3 +1,4 @@
+import hashlib
 import hmac
 import logging
 import os
@@ -16,7 +17,7 @@ from lib.email import complaint_email, send_email
 from models.content import Complaint, ComplaintCreate, ComplaintHistoryEntry, ComplaintPublicStatus, ComplaintStats, ComplaintUpdate, CountItem, EvidenceFile, RecapRequest, RecapResult
 from lib.recap import CATEGORIES, STATUSES, previous_month, send_recap
 from lib.sheets import ConnectorError
-from routers.auth import current_admin, require_superadmin
+from routers.auth import client_ip, current_admin
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -55,7 +56,7 @@ async def create_complaint(request: Request, background: BackgroundTasks, payloa
     if data.captcha_answer.strip() != "12":
         raise HTTPException(status_code=400, detail="Jawaban verifikasi belum tepat")
     # Rate-limit by a hashed key kept only in memory; IPs are never stored with the report.
-    key = str(hash(request.headers.get("x-forwarded-for", request.client.host if request.client else "x")))
+    key = hashlib.sha256(client_ip(request).encode()).hexdigest()
     now = time.time()
     recent = [t for t in RATE.get(key, []) if now - t < 3600]
     if len(recent) >= 5:
@@ -65,7 +66,7 @@ async def create_complaint(request: Request, background: BackgroundTasks, payloa
     evidence: list[EvidenceFile] = []
     blobs = []
     for f in files:
-        content = await f.read()
+        content = await f.read(MAX_SIZE + 1)
         if f.content_type not in ALLOWED:
             raise HTTPException(status_code=400, detail="Bukti harus berupa gambar, PDF, MP4, atau audio")
         if len(content) > MAX_SIZE:
@@ -83,6 +84,10 @@ async def create_complaint(request: Request, background: BackgroundTasks, payloa
         await db.complaint_files.insert_many([{**b, "complaint_id": complaint.id} for b in blobs])
     await db.complaints.insert_one(complaint.model_dump())
     RATE[key] = recent + [now]
+    if len(RATE) > 10_000:
+        for rate_key, stamps in list(RATE.items()):
+            if not stamps or now - stamps[-1] >= 3600:
+                RATE.pop(rate_key, None)
     origin = request.headers.get("origin", "")
     background.add_task(_notify, complaint.code, complaint.category, complaint.title, f"{origin}/admin" if origin.startswith("https://") else None)
     return ComplaintPublicStatus(**complaint.model_dump())

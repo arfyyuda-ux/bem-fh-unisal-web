@@ -315,7 +315,7 @@ async def update_settings(payload: SettingsUpdate, background: BackgroundTasks, 
 async def upload_image(file: UploadFile = File(...), _: dict = Depends(require_superadmin)):
     if file.content_type not in {"image/jpeg", "image/png", "image/webp"}:
         raise HTTPException(status_code=400, detail="Format harus JPG, PNG, atau WEBP")
-    content = await file.read()
+    content = await file.read(5 * 1024 * 1024 + 1)
     if len(content) > 5 * 1024 * 1024:
         raise HTTPException(status_code=413, detail="Ukuran maksimum 5MB")
     try:

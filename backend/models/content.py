@@ -230,8 +230,8 @@ class ApplicationStatusUpdate(BaseModel):
 
 
 class AdminLogin(BaseModel):
-    email: str
-    password: str
+    email: str = Field(max_length=254)
+    password: str = Field(max_length=1024)
 
 
 AdminRole = Literal["superadmin", "satgas"]
@@ -243,8 +243,8 @@ class AdminUserResponse(BaseModel):
 
 
 class AdminUserCreate(BaseModel):
-    email: str
-    password: str = Field(min_length=10)
+    email: str = Field(max_length=254)
+    password: str = Field(min_length=12, max_length=128)
     role: AdminRole = "satgas"
 
 
