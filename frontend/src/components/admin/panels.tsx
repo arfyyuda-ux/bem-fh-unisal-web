@@ -113,7 +113,7 @@ export function UsersPanel({ me }: { me: string }) {
     <p className="mt-4 max-w-2xl text-sm text-[#8b5b60]"><b>Satgas</b> hanya bisa membuka menu Pengaduan beserta statistik dan rekapnya. Data pendaftar, konten, dan pengaturan tidak bisa mereka akses. <b>Superadmin</b> bisa membuka semua menu.</p>
     <form data-testid="admin-user-create-form" onSubmit={(e) => { e.preventDefault(); create.mutate(); }} className="mt-8 grid gap-4 rounded bg-white p-6 sm:grid-cols-[1fr_1fr_160px_auto] sm:items-end">
       <label className="field-label">Email<input data-testid="admin-user-email-input" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label>
-      <label className="field-label">Password awal (min. 10)<input data-testid="admin-user-password-input" type="text" required minLength={10} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></label>
+      <label className="field-label">Password awal (12–128)<input data-testid="admin-user-password-input" type="password" required minLength={12} maxLength={128} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></label>
       <label className="field-label">Peran<select data-testid="admin-user-role-select" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as AdminRole })}><option value="satgas">Satgas</option><option value="superadmin">Superadmin</option></select></label>
       <button data-testid="admin-user-create-button" disabled={create.isPending} className="admin-primary justify-center"><UserPlus size={14} />Buat akun</button>
     </form>

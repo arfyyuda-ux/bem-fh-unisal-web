@@ -10,9 +10,9 @@ from pymongo import ASCENDING, DESCENDING, IndexModel
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
-mongo_url = os.environ["MONGO_URL"]
+mongo_url = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
 client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ["DB_NAME"]]
+db = client[os.environ.get("DB_NAME", "bem_fh_unisal")]
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,10 @@ INDEXES: dict[str, list[IndexModel]] = {
     "news": [IndexModel([("slug", ASCENDING)], name="slug_unique", unique=True), IndexModel([("published_at", DESCENDING)], name="published_desc")],
     "applications": [IndexModel([("email", ASCENDING)], name="application_email", unique=True), IndexModel([("created_at", DESCENDING)], name="application_created")],
     "admin_users": [IndexModel([("email", ASCENDING)], name="admin_email", unique=True)],
-    "admin_sessions": [IndexModel([("id", ASCENDING)], name="session_id", unique=True)],
+    "admin_sessions": [
+        IndexModel([("id", ASCENDING)], name="session_id", unique=True),
+        IndexModel([("expires_at", ASCENDING)], name="session_expiry", expireAfterSeconds=0),
+    ],
     "cabinet": [IndexModel([("order", ASCENDING)], name="cabinet_order")],
     "complaints": [IndexModel([("code", ASCENDING)], name="complaint_code", unique=True), IndexModel([("created_at", DESCENDING)], name="complaint_created")],
     "complaint_files": [IndexModel([("id", ASCENDING)], name="complaint_file_id", unique=True)],

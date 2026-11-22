@@ -2,48 +2,21 @@ import path from "node:path";
 import { defineConfig, type UserConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
-import { visualEdits } from "@emergentbase/visual-edits/vite";
 
-// Supervisor exports DISABLE_HOT_RELOAD=true when the platform sets ENABLE_RELOAD=false.
+// Hot reload dapat dimatikan lewat DISABLE_HOT_RELOAD=true (berguna di lingkungan dengan batas file watcher).
 const hotReloadDisabled = process.env.DISABLE_HOT_RELOAD === "true";
 
-// Visual Edits (x-* JSX tagging, overlay, /edit-file endpoint) is dev-server-only by
-// default (apply: serve); escape hatch mirrors DISABLE_HOT_RELOAD.
-const visualEditsDisabled = process.env.DISABLE_VISUAL_EDITS === "true";
-
-// Branded error overlay (build + runtime errors); escape hatch mirrors the two above.
-const emergentOverlayDisabled = process.env.DISABLE_EMERGENT_OVERLAY === "true";
-
-// Fails open: a broken overlay package must degrade to "no overlay" (Vite's own overlay
-// takes over), never to "no dev server". Never let a preview aid take the app down.
-async function loadEmergentOverlay() {
-  if (emergentOverlayDisabled) return null;
-  try {
-    const mod = await import("@emergentbase/overlay/vite");
-    return mod.emergentOverlay();
-  } catch (e) {
-    console.warn("[emergent-overlay] plugin failed to load; using Vite's overlay instead:", e instanceof Error ? e.message : e);
-    return null;
-  }
-}
-
-// Pod inotify quota is node-shared and routinely exhausted; native fs.watch EMFILEs at
-// boot. Polling is the load-bearing default (set before Vite evaluates the config).
-if (!hotReloadDisabled) {
-  process.env.CHOKIDAR_USEPOLLING = "true";
-}
+// Backend FastAPI. Ubah dengan VITE_API_PROXY_TARGET bila backend berjalan di host/port lain.
+const apiTarget = process.env.VITE_API_PROXY_TARGET ?? "http://localhost:8001";
 
 // https://vite.dev/config/
-export default defineConfig(async () => {
-  const emergentOverlay = await loadEmergentOverlay();
+export default defineConfig(() => {
   return {
+    // Subpath deploy (mis. GitHub Pages: VITE_BASE=/nama-repo/). Default "/".
+    base: process.env.VITE_BASE ?? "/",
     plugins: [
       react(),
       tailwindcss(),
-      ...(visualEditsDisabled ? [] : [visualEdits()]),
-      // No isServe guard: this factory takes no ConfigEnv arg, so build purity here rests
-      // on the package's own `apply: "serve"`.
-      ...(emergentOverlay ? [emergentOverlay] : []),
     ],
     resolve: {
       alias: [
@@ -92,21 +65,17 @@ export default defineConfig(async () => {
       host: true,
       port: 3000,
       allowedHosts: true,
-      // Preview probe + /edit-file are cross-origin from the Emergent tab; Vite defaults to localhost-only CORS.
-      cors: true,
-      // No hmr.clientPort override: Vite infers the WS target from window.location, which
-      // is correct on both localhost:3000 (smoke) and the https/:443 preview proxy.
-      // Build-error rendering: emergent-overlay when it loaded, else Vite's own overlay.
-      hmr: hotReloadDisabled ? false : { overlay: !emergentOverlay },
-      watch: hotReloadDisabled ? null : { usePolling: true, interval: 300 },
+      hmr: hotReloadDisabled ? false : undefined,
+      watch: hotReloadDisabled ? null : undefined,
       // The /api proxy convention: frontend code calls relative /api/*, never an
       // absolute backend URL. Target is the FastAPI dev server (supervisor: backend).
       proxy: {
         "/api": {
-          target: "http://localhost:8001",
+          target: apiTarget,
           changeOrigin: true,
         },
       },
     },
+    preview: { port: 3000, host: true, proxy: { "/api": { target: apiTarget, changeOrigin: true } } },
   } satisfies UserConfig;
 });

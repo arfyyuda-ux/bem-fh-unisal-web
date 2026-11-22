@@ -7,10 +7,23 @@ import App from './App.tsx'
 import { queryClient } from './lib/queryClient'
 import { Toaster } from './components/ui/sonner'
 
+// Gambar yang gagal dimuat (URL mati atau offline) diganti placeholder lokal satu kali.
+document.addEventListener(
+  'error',
+  (event) => {
+    const el = event.target
+    if (el instanceof HTMLImageElement && !el.dataset.fallback) {
+      el.dataset.fallback = '1'
+      el.src = `${import.meta.env.BASE_URL}images/placeholder.svg`
+    }
+  },
+  true,
+)
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
         <App />
         <Toaster richColors />
       </BrowserRouter>

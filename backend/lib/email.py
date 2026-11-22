@@ -95,6 +95,8 @@ def _assert_safe_email(subject: str, html: str) -> None:
 
 async def send_email(*, to: str, subject: str, html: str) -> str:
     """Raises on failure; callers decide how to record it."""
+    if not EMAIL_KEY:
+        raise RuntimeError("email_not_configured")
     _assert_safe_email(subject, html)
     payload = {"to": [to], "subject": subject, "html": html, "from_name": EMAIL_FROM_NAME}
     if EMAIL_REPLY_TO:
