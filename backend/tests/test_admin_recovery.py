@@ -7,6 +7,20 @@ import scripts.reset_admin_credentials as recovery
 from routers.auth import password_matches
 
 
+@pytest.mark.parametrize(
+    ("selection", "expected"),
+    [("1", "first@example.org"), ("SECOND@example.org", "second@example.org")],
+)
+def test_select_superadmin_email_from_list(selection, expected):
+    emails = ["first@example.org", "second@example.org"]
+    assert recovery.select_superadmin_email(selection, emails) == expected
+
+
+def test_select_superadmin_email_rejects_unknown_account():
+    with pytest.raises(ValueError, match="Pilihan tidak cocok"):
+        recovery.select_superadmin_email("unknown@example.org", ["admin@example.org"])
+
+
 class FakeCollection:
     def __init__(self, documents=None):
         self.documents = documents or []

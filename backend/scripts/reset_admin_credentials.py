@@ -17,6 +17,18 @@ def normalize_email(value: str) -> str:
     return email
 
 
+def select_superadmin_email(selection: str, available_emails: list[str]) -> str:
+    if selection.isdigit():
+        index = int(selection) - 1
+        if 0 <= index < len(available_emails):
+            return available_emails[index]
+    else:
+        email = normalize_email(selection)
+        if email in available_emails:
+            return email
+    raise ValueError("Pilihan tidak cocok dengan akun superadmin yang ditampilkan")
+
+
 async def reset_superadmin_credentials(old_email: str, new_email: str, new_password: str) -> None:
     user = await db.admin_users.find_one({"email": old_email, "role": "superadmin"})
     if not user:
@@ -50,7 +62,19 @@ async def main() -> None:
         raise RuntimeError("MONGO_URL belum dikonfigurasi; hentikan agar tidak memakai database lokal yang salah")
 
     print(f"Database target: {db.name}")
-    old_email = normalize_email(input("Email superadmin saat ini: "))
+    accounts = await db.admin_users.find(
+        {"role": "superadmin"}, {"_id": 0, "email": 1}
+    ).sort("email", 1).to_list(200)
+    available_emails = [account["email"] for account in accounts]
+    if not available_emails:
+        raise RuntimeError("Tidak ditemukan akun superadmin di database ini")
+    print("Akun superadmin yang ditemukan:")
+    for index, email in enumerate(available_emails, start=1):
+        print(f"  {index}. {email}")
+    old_email = select_superadmin_email(
+        input("Pilih nomor atau email akun yang akan dipulihkan: "),
+        available_emails,
+    )
     new_email = normalize_email(input("Email superadmin baru: "))
     new_password = getpass.getpass("Sandi baru (12-128 karakter, tidak ditampilkan): ")
     confirmation = getpass.getpass("Ulangi sandi baru: ")
