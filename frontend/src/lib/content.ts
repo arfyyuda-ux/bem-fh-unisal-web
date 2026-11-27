@@ -24,10 +24,10 @@ const cabinetSeed: [string, string, string, CabinetMember["group"]][] = [
 
 export const FALLBACK_CONTENT: PublicContent = {
   settings: {
-    id: "main", email: "", instagram: "", whatsapp: "6281234567890", google_form_url: "",
+    id: "main", email: "", instagram: "", x: "", youtube: "", linkedin: "", whatsapp: "6281234567890", google_form_url: "",
     address_id: "Jl. Soekarno Hatta No. 34, Bandung", address_en: "Jl. Soekarno Hatta No. 34, Bandung",
     tagline_id: "Bergerak dengan Integritas, Mengabdi dengan Keberanian", tagline_en: "Moving with Integrity, Serving with Courage",
-    logo_url: `${import.meta.env.BASE_URL}logo-bem.png`, cabinet_name: "Kabinet Abisatya", period: "2026", hero_image_url: hero,
+    logo_url: `${import.meta.env.BASE_URL}logo-bem.png`, cabinet_name: "Kabinet Abisatya", period: "2026", hero_image_url: hero, hero_image_url_2: forum, hero_image_url_3: service, hero_image_url_4: president, home_news_limit: 4,
     hero_title_id: "Menyalakan keberanian, merawat keadilan.", hero_title_en: "Lighting courage, caring for justice.",
     hero_body_id: "BEM Fakultas Hukum Universitas Sali Al-Aitaam Bandung hadir sebagai ruang tumbuh yang jujur, inklusif, dan berdampak.",
     hero_body_en: "BEM Faculty of Law, Universitas Sali Al-Aitaam Bandung is a space to grow with honesty, inclusion, and impact.",

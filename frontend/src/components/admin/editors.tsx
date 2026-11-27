@@ -17,6 +17,8 @@ export interface FieldDef {
   required?: boolean;
   wide?: boolean;
   hint?: string;
+  min?: number;
+  max?: number;
 }
 
 export const errorMessage = (error: unknown, fallback = "Gagal menyimpan") => {
@@ -78,7 +80,7 @@ export function FieldInput({ field, value, onChange, testPrefix }: { field: Fiel
     {field.label}
     {field.type === "textarea" ? <textarea {...common} rows={4} onChange={(event) => onChange(event.target.value)} />
       : field.type === "select" ? <select {...common} onChange={(event) => onChange(event.target.value)}>{field.options?.map((o) => <option key={o}>{o}</option>)}</select>
-      : <input {...common} type={field.type === "number" ? "number" : field.type === "date" ? "date" : "text"} onChange={(event) => onChange(field.type === "number" ? Number(event.target.value) : event.target.value)} />}
+      : <input {...common} min={field.min} max={field.max} type={field.type === "number" ? "number" : field.type === "date" ? "date" : "text"} onChange={(event) => onChange(field.type === "number" ? Number(event.target.value) : event.target.value)} />}
     {field.hint && <span className="text-[10px] font-normal normal-case tracking-normal text-[#8b5b60]">{field.hint}</span>}
   </label>;
 }

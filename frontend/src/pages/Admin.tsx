@@ -49,7 +49,11 @@ const GALLERY_FIELDS: FieldDef[] = [
 ];
 const HOME_FIELDS: FieldDef[] = [
   { key: "cabinet_name", label: "Nama kabinet", required: true }, { key: "period", label: "Periode", required: true, hint: "mis. 2026 atau 2026/2027" },
-  { key: "hero_image_url", label: "Foto latar depan (hero)", type: "image" },
+  { key: "hero_image_url", label: "Foto slideshow 1 (utama)", type: "image", hint: "Atur empat foto slideshow dari sini. Slot kosong akan dilengkapi dari galeri, berita, dan foto kabinet." },
+  { key: "hero_image_url_2", label: "Foto slideshow 2", type: "image" },
+  { key: "hero_image_url_3", label: "Foto slideshow 3", type: "image" },
+  { key: "hero_image_url_4", label: "Foto slideshow 4", type: "image" },
+  { key: "home_news_limit", label: "Jumlah berita terbaru di beranda", type: "number", min: 1, max: 12, required: true, hint: "1–12 berita terbaru. Berita lainnya tersedia lewat Selengkapnya." },
   { key: "logo_url", label: "Logo", type: "image" },
   { key: "hero_title_id", label: "Judul hero (ID)", wide: true, required: true }, { key: "hero_title_en", label: "Hero title (EN)", wide: true },
   { key: "hero_body_id", label: "Deskripsi hero (ID)", type: "textarea" }, { key: "hero_body_en", label: "Hero description (EN)", type: "textarea" },
@@ -70,7 +74,9 @@ const CALENDAR_FIELDS: FieldDef[] = [
   { key: "calendar_sync_enabled", label: "Sinkronkan agenda ke Google Calendar \"Agenda BEM FH UNISAL\"", type: "checkbox", wide: true },
 ];
 const CONTACT_FIELDS: FieldDef[] = [
-  { key: "email", label: "Email publik", hint: "kosongkan untuk menyembunyikan" }, { key: "instagram", label: "Instagram URL", hint: "mis. https://instagram.com/bemfhunisal" },
+  { key: "email", label: "Email publik", hint: "kosongkan untuk menyembunyikan" },
+  { key: "instagram", label: "Instagram URL", hint: "mis. https://instagram.com/bemfhunisal" }, { key: "x", label: "X URL", hint: "kosongkan untuk menyembunyikan" },
+  { key: "youtube", label: "YouTube URL", hint: "kosongkan untuk menyembunyikan" }, { key: "linkedin", label: "LinkedIn URL", hint: "kosongkan untuk menyembunyikan" },
   { key: "whatsapp", label: "WhatsApp", hint: "format 62812xxxx" }, { key: "google_form_url", label: "Google Form URL", hint: "kosongkan bila tidak dipakai" },
   { key: "address_id", label: "Alamat (ID)", wide: true, required: true }, { key: "address_en", label: "Address (EN)", wide: true },
   { key: "complaint_email", label: "Email penerima laporan pengaduan", hint: "notifikasi otomatis tiap ada laporan baru" }, { key: "complaint_whatsapp", label: "WhatsApp penerima laporan", hint: "untuk tombol Teruskan ke WA, format 62812xxxx" },

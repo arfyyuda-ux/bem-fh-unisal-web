@@ -104,6 +104,9 @@ class Mission(BaseModel):
 class SettingsUpdate(BaseModel):
     email: str = ""
     instagram: str = ""
+    x: str = ""
+    youtube: str = ""
+    linkedin: str = ""
     whatsapp: str = "6281234567890"
     google_form_url: str = ""
     address_id: str = "Jl. Soekarno Hatta No. 34, Bandung"
@@ -114,6 +117,10 @@ class SettingsUpdate(BaseModel):
     cabinet_name: str = "Kabinet Abisatya"
     period: str = "2026"
     hero_image_url: str = ""
+    hero_image_url_2: str = ""
+    hero_image_url_3: str = ""
+    hero_image_url_4: str = ""
+    home_news_limit: int = Field(default=4, ge=1, le=12)
     hero_title_id: str = "Menyalakan keberanian, merawat keadilan."
     hero_title_en: str = "Lighting courage, caring for justice."
     hero_body_id: str = "BEM Fakultas Hukum Universitas Sali Al-Aitaam Bandung hadir sebagai ruang tumbuh yang jujur, inklusif, dan berdampak."

@@ -4,7 +4,7 @@
 Public bilingual (ID/EN) single-page website for BEM Faculty of Law, Universitas Sali Al-Aitaam Bandung: hero, news (search/filter/detail/share), agenda, about + vision/missions, cabinet (Pimpinan + Kementerian), programs, gallery, membership registration + status page. Every public section is editable from the admin panel, so a new cabinet can take over each period without touching code.
 
 ## Data model (Mongo)
-- `site_settings` (id="main"): contacts (email, instagram, whatsapp, google_form_url, address id/en), branding (logo_url, cabinet_name, period, tagline), hero (hero_image_url, hero title/body id/en), about (title/body id/en, vision id/en, missions[] {title_id,title_en,desc_id,desc_en})
+- `site_settings` (id="main"): contacts (email, whatsapp, google_form_url, address id/en), social URLs (instagram, x, youtube, linkedin), branding (logo_url, cabinet_name, period, tagline), hero slideshow (hero_image_url through hero_image_url_4, hero title/body id/en), home news count (home_news_limit, 1–12; default 4), about (title/body id/en, vision id/en, missions[] {title_id,title_en,desc_id,desc_en})
 - `news`: slug (unique), category, bilingual title/excerpt/content, image_url, published_at, read_minutes, featured
 - `cabinet`: name, role_id, role_en, group ("Pimpinan" | "Kementerian"), image_url, order
 - `programs`, `agendas`, `gallery`: bilingual fields + `order`
@@ -18,7 +18,7 @@ Kementerian (8): Kaderisasi dan Pengembangan Profesi, Luar Negeri, Dalam Negeri,
 ## Key flows
 1. Visitor: ID/EN toggle, news search/filter → `/berita/:slug` → share (WA/FB/X/copy).
 2. Registration: NIM 8–15 digits, Indonesian WhatsApp, email, semester 1–8, preferred ministry, captcha `7 + 5 = 12`, 3 submissions/hour/IP → `/status/:id`.
-3. Admin: hamburger menu (☰) → Admin → `/admin` login. Tabs: Ringkasan, Beranda & Tentang, Berita, Kabinet, Program kerja, Agenda, Galeri, Pendaftar, Kontak & Akun, Log aktivitas. Full create/edit/delete with photo upload (JPG/PNG/WEBP ≤5MB).
+3. Admin: hamburger menu (☰) → Admin → `/admin` login. Tabs: Ringkasan, Beranda & Tentang, Berita, Kabinet, Program kerja, Agenda, Galeri, Pendaftar, Kontak & Akun, Log aktivitas. Beranda & Tentang manages the four hero slideshow images and how many latest news items appear on the home page. Kontak & Akun manages public contact and social URLs; configured Instagram, X, YouTube, and LinkedIn links appear as footer icons. Full create/edit/delete with photo upload (JPG/PNG/WEBP ≤5MB).
 4. Status change on an applicant → email sent automatically through the configured email provider (sender name "BEM FH UNISAL") in the background; result shown in "Email notifikasi" column. "Kirim WA" button opens wa.me with a ready-made message (sent manually by the admin).
 
 ## API (all under /api)

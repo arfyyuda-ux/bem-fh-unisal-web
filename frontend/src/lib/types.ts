@@ -10,6 +10,9 @@ export interface Mission {
 export interface SettingsUpdate {
   email: string;
   instagram: string;
+  x: string;
+  youtube: string;
+  linkedin: string;
   whatsapp: string;
   google_form_url: string;
   address_id: string;
@@ -20,6 +23,10 @@ export interface SettingsUpdate {
   cabinet_name: string;
   period: string;
   hero_image_url: string;
+  hero_image_url_2: string;
+  hero_image_url_3: string;
+  hero_image_url_4: string;
+  home_news_limit: number;
   hero_title_id: string;
   hero_title_en: string;
   hero_body_id: string;
