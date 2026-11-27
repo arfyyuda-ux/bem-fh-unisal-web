@@ -71,6 +71,7 @@ cd ../frontend && yarn typecheck && yarn lint && yarn build
 ## Keamanan produksi
 
 - Isi `ADMIN_INITIAL_PASSWORD` dengan password kuat sebelum backend dijalankan pada database baru.
+- Jika akun superadmin terkunci, pemilik backend dapat menjalankan `cd backend && python -m scripts.reset_admin_credentials` pada lingkungan yang memiliki `MONGO_URL` produksi. Skrip meminta email lama/baru, memasukkan sandi secara tersembunyi, mengharuskan konfirmasi `RESET`, dan mencabut semua sesi admin. Jangan gunakan sandi yang pernah dikirim melalui chat; buat sandi baru langsung saat prompt berjalan.
 - Atur `CORS_ORIGINS` ke origin frontend yang tepat, tanpa wildcard, misalnya `https://bem.example.id`.
 - Sajikan lewat HTTPS dan atur `COOKIE_SECURE=true`, termasuk bila TLS dihentikan di reverse proxy. Cookie admin memakai `HttpOnly` dan `SameSite=Lax`.
 - Batasi akses MongoDB dan simpan rahasia integrasi hanya di `backend/.env` (sudah masuk `.gitignore`).
