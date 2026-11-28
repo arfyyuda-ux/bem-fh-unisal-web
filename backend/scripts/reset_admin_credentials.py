@@ -95,4 +95,3 @@ if __name__ == "__main__":
         asyncio.run(main())
     finally:
         client.close()
-MONGO_URL="mongodb://localhost:27017"
