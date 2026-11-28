@@ -1,10 +1,10 @@
 import type { CabinetMember, PublicContent } from "@/lib/types";
 
 // Static fallback so the page renders fully even when the backend is unreachable (static preview).
-const hero = `${import.meta.env.BASE_URL}images/hero.jpeg`;
-const president = `${import.meta.env.BASE_URL}images/president.jpeg`;
-const forum = `${import.meta.env.BASE_URL}images/forum.jpeg`;
-const service = `${import.meta.env.BASE_URL}images/service.jpeg`;
+const hero = "/images/hero.jpeg";
+const president = "/images/president.jpeg";
+const forum = "/images/forum.jpeg";
+const service = "/images/service.jpeg";
 
 const cabinetSeed: [string, string, string, CabinetMember["group"]][] = [
   ["Aulia Rahma", "Presiden Mahasiswa", "Student President", "Pimpinan"],
@@ -27,7 +27,7 @@ export const FALLBACK_CONTENT: PublicContent = {
     id: "main", email: "", instagram: "", x: "", youtube: "", linkedin: "", whatsapp: "6281234567890", google_form_url: "",
     address_id: "Jl. Soekarno Hatta No. 34, Bandung", address_en: "Jl. Soekarno Hatta No. 34, Bandung",
     tagline_id: "Bergerak dengan Integritas, Mengabdi dengan Keberanian", tagline_en: "Moving with Integrity, Serving with Courage",
-    logo_url: `${import.meta.env.BASE_URL}logo-bem.png`, cabinet_name: "Kabinet Abisatya", period: "2026", hero_image_url: hero, hero_image_url_2: forum, hero_image_url_3: service, hero_image_url_4: president, home_news_limit: 4,
+    logo_url: "/logo-bem.png", cabinet_name: "Kabinet Abisatya", period: "2026", hero_image_url: hero, hero_image_url_2: forum, hero_image_url_3: service, hero_image_url_4: president, home_news_limit: 4,
     hero_title_id: "Menyalakan keberanian, merawat keadilan.", hero_title_en: "Lighting courage, caring for justice.",
     hero_body_id: "BEM Fakultas Hukum Universitas Sali Al-Aitaam Bandung hadir sebagai ruang tumbuh yang jujur, inklusif, dan berdampak.",
     hero_body_en: "BEM Faculty of Law, Universitas Sali Al-Aitaam Bandung is a space to grow with honesty, inclusion, and impact.",

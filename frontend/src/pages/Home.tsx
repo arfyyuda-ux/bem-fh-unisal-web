@@ -241,7 +241,7 @@ export default function Home() {
 
     <footer data-testid="site-footer" className="bg-[#2d070d] px-5 py-14 text-white lg:px-10">
       <div className="mx-auto grid max-w-7xl gap-10 md:grid-cols-[1.2fr_1fr_1fr_1fr]">
-        <div><div className="flex items-center gap-3"><img src={s.logo_url || "/logo-bem.png"} alt="" className="h-12 w-12 object-contain" /><span className="text-xs font-bold uppercase tracking-[0.2em]">BEM FH UNISAL</span></div><p data-testid="footer-tagline" className="mt-6 max-w-xs text-sm leading-7 text-white/50">{s.cabinet_name} {s.period} · {t.footer}</p></div>
+        <div><div className="flex items-center gap-3"><img src={resolveAssetUrl(s.logo_url || "/logo-bem.png")} alt="" className="h-12 w-12 object-contain" /><span className="text-xs font-bold uppercase tracking-[0.2em]">BEM FH UNISAL</span></div><p data-testid="footer-tagline" className="mt-6 max-w-xs text-sm leading-7 text-white/50">{s.cabinet_name} {s.period} · {t.footer}</p></div>
         <div><h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#D4AF37]">{t.visit}</h3><p data-testid="footer-address" className="mt-4 text-sm leading-7 text-white/60">{pick(language, s.address_id, s.address_en)}</p></div>
         <div><h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#D4AF37]">{t.connect}</h3><div className="mt-4 space-y-3 text-sm text-white/60">
           {s.email && <a data-testid="footer-email-link" className="flex items-center gap-2 hover:text-[#D4AF37]" href={`mailto:${s.email}`}><Mail size={14} />{s.email}</a>}
