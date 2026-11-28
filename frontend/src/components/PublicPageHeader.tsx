@@ -37,7 +37,7 @@ export default function PublicPageHeader({ testId = "subpage-header", backLinkTe
           if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpenGroup(null);
         }}>
           <button data-testid={`${testId}-nav-${group.id}`} type="button" aria-expanded={openGroup === group.id} aria-haspopup="menu" onClick={() => setOpenGroup(openGroup === group.id ? null : group.id)} className={`nav-top-link inline-flex items-center gap-1 rounded-full px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] hover:bg-white/10 hover:text-[#D4AF37] ${openGroup === group.id ? "is-open text-[#D4AF37]" : "text-white/80"}`}>
-            {group.label[language]}<ChevronDown size={12} className="nav-chevron" />
+            {group.label[language]}<ChevronDown size={14} className="nav-chevron" />
           </button>
           {openGroup === group.id && <div role="menu" className="absolute left-0 top-full z-50 min-w-52 pt-2">
             <div className="nav-dropdown rounded-sm border border-white/10 bg-[#2d070d]/98 p-2 shadow-[0_18px_45px_rgba(0,0,0,.28)] backdrop-blur-xl">
@@ -57,7 +57,7 @@ export default function PublicPageHeader({ testId = "subpage-header", backLinkTe
     </div>
     {mobileOpen && <nav data-testid={`${testId}-mobile-navigation`} className="mobile-nav-enter mx-auto max-h-[calc(100vh-76px)] max-w-7xl overflow-y-auto border-t border-white/10 py-3 lg:hidden">
       {PUBLIC_NAVIGATION.map((group) => <details key={group.id} className="border-b border-white/10">
-        <summary data-testid={`${testId}-mobile-group-${group.id}`} className="mobile-nav-summary cursor-pointer list-none py-3 text-xs font-bold uppercase tracking-[0.14em] text-white/85"><span>{group.label[language]}</span><ChevronDown size={13} className="mobile-nav-chevron" /></summary>
+        <summary data-testid={`${testId}-mobile-group-${group.id}`} className="mobile-nav-summary cursor-pointer list-none py-3 text-xs font-bold uppercase tracking-[0.14em] text-white/85"><span>{group.label[language]}</span><ChevronDown size={16} className="mobile-nav-chevron" /></summary>
         <div className="grid gap-1 pb-3 pl-3">
           {group.items.map((item, index) => <Link data-testid={`${testId}-mobile-submenu-${group.id}-${index}`} key={item.to} to={item.to} onClick={() => setMobileOpen(false)} className="mobile-nav-item rounded px-3 py-2 text-xs text-white/65 hover:bg-white/10 hover:text-[#D4AF37]">{item.label[language]}<span aria-hidden="true">→</span></Link>)}
         </div>
