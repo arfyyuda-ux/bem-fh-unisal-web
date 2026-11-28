@@ -52,7 +52,6 @@ class AgendaInput(BaseModel):
 
 class AgendaItem(AgendaInput):
     id: str = Field(default_factory=new_id)
-    calendar_event_id: str = ""
 
 
 class CabinetInput(BaseModel):
@@ -140,13 +139,7 @@ class SettingsUpdate(BaseModel):
 
 
     registration_open: bool = True
-    sheet_sync_enabled: bool = False
-    sheet_spreadsheet_id: str = ""
-    complaint_email: str = ""
     complaint_whatsapp: str = ""
-    recap_spreadsheet_id: str = ""
-    calendar_sync_enabled: bool = False
-    calendar_id: str = ""
     founded_year: str = "2010"
     history_is_draft: bool = True
     history_id: str = ("Badan Eksekutif Mahasiswa Fakultas Hukum Universitas Sali Al-Aitaam lahir dari kebutuhan mahasiswa hukum akan wadah "
@@ -227,9 +220,6 @@ class Application(BaseModel):
     motivation: str
     status: ApplicationStatus = "Baru"
     created_at: str
-    email_notification: str = ""
-    notified_at: str = ""
-    sheet_sync: str = ""
 
 
 class ApplicationStatusUpdate(BaseModel):
@@ -266,17 +256,6 @@ class ComplaintStats(BaseModel):
     by_category: list[CountItem]
     by_status: list[CountItem]
     by_month: list[CountItem]
-
-
-class RecapRequest(BaseModel):
-    month: str = ""  # YYYY-MM; empty = previous month
-
-
-class RecapResult(BaseModel):
-    month: str
-    total: int
-    spreadsheet_id: str
-    updated: bool
 
 
 class UploadResponse(BaseModel):

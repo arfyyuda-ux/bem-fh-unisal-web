@@ -5,6 +5,7 @@ import { ArrowUpRight, MapPin, Search, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import PublicPageHeader from "@/components/PublicPageHeader";
 import { apiGet, apiPost, ApiError } from "@/lib/api";
+import { resolveAssetUrl } from "@/lib/assets";
 import { FALLBACK_CONTENT } from "@/lib/content";
 import { DEPARTMENTS, initialsOf } from "@/lib/types";
 import type { ApplicationPayload, CabinetMember, PublicContent } from "@/lib/types";
@@ -52,7 +53,7 @@ export function AboutPage() {
     <PageIntro eyebrow="BEM FH UNISAL" title="Mengenal ruang gerak kita." description="Tempat mahasiswa hukum belajar mendengar, menyuarakan gagasan, dan bergerak bersama." />
     <section id="profil" className="scroll-mt-24 px-5 py-16 lg:px-10 lg:py-24">
       <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[.8fr_1.2fr] lg:gap-16">
-        <img src={content.gallery[0]?.image_url || settings.hero_image_url || FALLBACK_CONTENT.settings.hero_image_url} alt={content.gallery[0]?.caption_id || "Kegiatan BEM FH UNISAL"} className="aspect-[4/3] w-full rounded-sm object-cover lg:aspect-[4/5]" />
+        <img src={resolveAssetUrl(content.gallery[0]?.image_url || settings.hero_image_url || FALLBACK_CONTENT.settings.hero_image_url)} alt={content.gallery[0]?.caption_id || "Kegiatan BEM FH UNISAL"} className="aspect-[4/3] w-full rounded-sm object-cover lg:aspect-[4/5]" />
         <div className="self-center">
           <PublicSectionHeading eyebrow="Profil organisasi" title={settings.about_title_id} />
           <p className="mt-6 whitespace-pre-line text-sm leading-8 text-[#4c3737]/75">{settings.about_body_id}</p>
@@ -79,7 +80,7 @@ export function AboutPage() {
 
 function CabinetCard({ member }: { member: CabinetMember }) {
   return <article className="overflow-hidden rounded-sm border border-[#4A070E]/10 bg-white shadow-sm">
-    <div className="aspect-[4/5] overflow-hidden bg-[#4A070E]">{member.image_url ? <img src={member.image_url} alt={member.name} loading="lazy" className="h-full w-full object-cover" /> : <div className="flex h-full items-end bg-[radial-gradient(circle_at_70%_20%,#6b1019,#2d070d)] p-5 font-display text-6xl text-[#D4AF37]">{initialsOf(member.name)}</div>}</div>
+    <div className="aspect-[4/5] overflow-hidden bg-[#4A070E]">{member.image_url ? <img src={resolveAssetUrl(member.image_url)} alt={member.name} loading="lazy" className="h-full w-full object-cover" /> : <div className="flex h-full items-end bg-[radial-gradient(circle_at_70%_20%,#6b1019,#2d070d)] p-5 font-display text-6xl text-[#D4AF37]">{initialsOf(member.name)}</div>}</div>
     <div className="min-h-24 p-4"><h3 className="font-display text-lg leading-snug text-[#4A070E]">{member.name}</h3><p className="mt-2 text-[10px] font-bold uppercase leading-relaxed tracking-[0.12em] text-[#8b5b60]">{member.role_id}</p></div>
   </article>;
 }
@@ -111,7 +112,7 @@ export function ActivitiesPage() {
       <div className="mx-auto max-w-7xl"><PublicSectionHeading eyebrow="Kalender kegiatan" title="Agenda" /><div className="mt-8 grid gap-4 md:grid-cols-2">{agendas.map((agenda) => <article key={agenda.id} className="flex gap-5 rounded-sm border border-[#4A070E]/10 bg-[#FAF7F0] p-5"><div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-sm bg-[#4A070E] text-[#D4AF37]"><strong className="font-display text-xl leading-none">{agenda.day}</strong><span className="text-[9px] font-bold tracking-widest">{agenda.month}</span></div><div><h3 className="font-display text-xl text-[#4A070E]">{agenda.title_id}</h3><p className="mt-2 flex items-center gap-1 text-xs text-[#8b5b60]"><MapPin size={13} />{agenda.location_id}{agenda.time_start ? ` · ${agenda.time_start} WIB` : ""}</p></div></article>)}</div></div>
     </section>
     <section id="galeri" className="scroll-mt-24 px-5 py-16 lg:px-10 lg:py-24">
-      <div className="mx-auto max-w-7xl"><PublicSectionHeading eyebrow="Dokumentasi" title="Galeri" /><div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{gallery.map((image) => <figure key={image.id} className="overflow-hidden rounded-sm bg-[#4A070E]"><img src={image.image_url} alt={image.caption_id} loading="lazy" className="aspect-[4/3] w-full object-cover" /><figcaption className="p-4 text-white"><span className="text-[10px] font-bold uppercase tracking-widest text-[#D4AF37]">{image.year}</span><p className="mt-1 font-display text-lg">{image.caption_id}</p></figcaption></figure>)}</div></div>
+      <div className="mx-auto max-w-7xl"><PublicSectionHeading eyebrow="Dokumentasi" title="Galeri" /><div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{gallery.map((image) => <figure key={image.id} className="overflow-hidden rounded-sm bg-[#4A070E]"><img src={resolveAssetUrl(image.image_url)} alt={image.caption_id} loading="lazy" className="aspect-[4/3] w-full object-cover" /><figcaption className="p-4 text-white"><span className="text-[10px] font-bold uppercase tracking-widest text-[#D4AF37]">{image.year}</span><p className="mt-1 font-display text-lg">{image.caption_id}</p></figcaption></figure>)}</div></div>
     </section>
   </PageShell>;
 }
@@ -129,7 +130,7 @@ export function NewsListingPage() {
     <PageIntro eyebrow="Informasi & cerita" title="Berita BEM FH UNISAL." description="Kabar, gagasan, dan catatan kegiatan dari lingkungan Fakultas Hukum UNISAL." />
     <section className="mx-auto max-w-7xl px-5 py-16 lg:px-10 lg:py-24">
       <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end"><PublicSectionHeading eyebrow="Kabar terbaru" title="Semua berita" /><div className="flex flex-col gap-3 sm:flex-row"><label className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8b5b60]" size={16} /><input aria-label="Cari berita" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Cari berita..." className="h-11 w-full rounded-full border border-[#4A070E]/15 bg-white pl-9 pr-4 text-sm outline-none focus:border-[#D4AF37] sm:w-56" /></label><select aria-label="Kategori berita" value={category} onChange={(event) => setCategory(event.target.value)} className="h-11 rounded-full border border-[#4A070E]/15 bg-white px-4 text-xs font-semibold text-[#4A070E]">{categories.map((item) => <option key={item}>{item}</option>)}</select></div></div>
-      <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{filtered.map((news) => <article key={news.id} className="overflow-hidden rounded-sm border border-[#4A070E]/10 bg-white shadow-sm"><img src={news.image_url} alt={news.title_id} loading="lazy" className="aspect-[16/10] w-full object-cover" /><div className="p-5"><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a17b22]">{news.category} · {news.published_at}</p><h2 className="mt-3 font-display text-2xl leading-tight text-[#4A070E]">{news.title_id}</h2><p className="mt-3 text-sm leading-6 text-[#4c3737]/70">{news.excerpt_id}</p><Link to={`/berita/${news.slug}`} className="mt-5 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#4A070E]">Baca berita <ArrowUpRight size={14} /></Link></div></article>)}</div>
+      <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{filtered.map((news) => <article key={news.id} className="overflow-hidden rounded-sm border border-[#4A070E]/10 bg-white shadow-sm"><img src={resolveAssetUrl(news.image_url)} alt={news.title_id} loading="lazy" className="aspect-[16/10] w-full object-cover" /><div className="p-5"><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a17b22]">{news.category} · {news.published_at}</p><h2 className="mt-3 font-display text-2xl leading-tight text-[#4A070E]">{news.title_id}</h2><p className="mt-3 text-sm leading-6 text-[#4c3737]/70">{news.excerpt_id}</p><Link to={`/berita/${news.slug}`} className="mt-5 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#4A070E]">Baca berita <ArrowUpRight size={14} /></Link></div></article>)}</div>
       {!filtered.length && <p className="mt-8 rounded-sm bg-white p-8 text-center text-sm text-[#8b5b60]">Tidak ada berita yang cocok dengan pencarian.</p>}
     </section>
   </PageShell>;

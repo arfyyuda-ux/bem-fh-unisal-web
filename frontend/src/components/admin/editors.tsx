@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ImagePlus, Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { apiDelete, apiPost, apiPut, apiUpload, ApiError } from "@/lib/api";
+import { resolveAssetUrl } from "@/lib/assets";
 import type { UploadResponse } from "@/lib/types";
 
 export type Value = string | number | boolean;
@@ -57,7 +58,7 @@ export function ImageField({ value, onChange, testId, label }: { value: string; 
     {label}
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
       <div className="flex h-24 w-32 shrink-0 items-center justify-center overflow-hidden border border-[#4A070E]/15 bg-[#f5efe5]">
-        {value ? <img data-testid={`${testId}-preview`} src={value} alt="" className="h-full w-full object-cover" /> : <ImagePlus className="text-[#8b5b60]" size={20} />}
+        {value ? <img data-testid={`${testId}-preview`} src={resolveAssetUrl(value)} alt="" className="h-full w-full object-cover" /> : <ImagePlus className="text-[#8b5b60]" size={20} />}
       </div>
       <div className="flex flex-1 flex-col gap-2">
         <input data-testid={`${testId}-url-input`} value={value} placeholder="URL gambar atau unggah file" onChange={(event) => onChange(event.target.value)} />
@@ -129,7 +130,7 @@ export function CollectionEditor({ name, title, eyebrow, items, fields, empty, r
     </form>}
     <div data-testid={`admin-${name}-list`} className="mt-8 space-y-3">
       {rows.map((row) => <div data-testid={`admin-${name}-row-${row.id}`} key={row.id} className={`flex items-center gap-4 rounded bg-white p-4 ${editingId === row.id ? "ring-2 ring-[#D4AF37]" : ""}`}>
-        {rowImage && (rowImage(row) ? <img src={rowImage(row)} alt="" className="h-14 w-14 shrink-0 object-cover" /> : <div className="flex h-14 w-14 shrink-0 items-center justify-center bg-[#4A070E] font-display text-lg text-[#D4AF37]">{rowTitle(row).slice(0, 1)}</div>)}
+        {rowImage && (rowImage(row) ? <img src={resolveAssetUrl(rowImage(row))} alt="" className="h-14 w-14 shrink-0 object-cover" /> : <div className="flex h-14 w-14 shrink-0 items-center justify-center bg-[#4A070E] font-display text-lg text-[#D4AF37]">{rowTitle(row).slice(0, 1)}</div>)}
         <div className="min-w-0 flex-1"><p className="truncate font-display text-xl text-[#4A070E]">{rowTitle(row)}</p><p className="truncate text-xs text-[#8b5b60]">{rowSub(row)}</p></div>
         <button data-testid={`admin-${name}-edit-${row.id}`} onClick={() => startEdit(row)} className="admin-icon" aria-label="Edit"><Pencil size={15} /></button>
         <button data-testid={`admin-${name}-delete-${row.id}`} onClick={() => { if (window.confirm(`Hapus "${rowTitle(row)}"?`)) remove.mutate(row.id); }} className="admin-icon hover:!bg-red-700" aria-label="Hapus"><Trash2 size={15} /></button>

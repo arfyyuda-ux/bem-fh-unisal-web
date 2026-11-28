@@ -1,11 +1,11 @@
 import csv
 import io
-import logging
+import re
 import time
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Request, Response, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, UploadFile
 from fastapi.responses import StreamingResponse
 from PIL import Image
 from pydantic import BaseModel
@@ -13,9 +13,6 @@ from pymongo import ReturnDocument
 from pymongo.errors import DuplicateKeyError
 
 from lib.db import db
-from lib.email import send_email, status_email
-from lib.gcal import delete_event, ensure_calendar, fill_day_month, sync_agenda, sync_all
-from lib.sheets import ConnectorError, append_application_row, append_rows, ensure_spreadsheet
 from routers.auth import current_admin, require_superadmin
 from models.content import (
     AgendaInput, AgendaItem, Application, ApplicationCreate, ApplicationStatusUpdate,
@@ -23,18 +20,46 @@ from models.content import (
     CabinetArchive, ArchiveMember, ProgramInput, ProgramItem, PublicContent, SettingsUpdate, SiteSettings, UploadResponse,
 )
 
-logger = logging.getLogger(__name__)
 router = APIRouter()
-SEED_VERSION = 3
+SEED_VERSION = 4
 IMAGE_URLS = {
-    "hero": "https://static.prod-images.emergentagent.com/jobs/9d5d6cbf-7076-41a9-9c9e-2df75d62b295/images/8bc40d98ee47ed75c6f33a5ba65b4157fa470b0e15ecc68021791868811b93f7.jpeg",
-    "president": "https://static.prod-images.emergentagent.com/jobs/9d5d6cbf-7076-41a9-9c9e-2df75d62b295/images/0d5406ea66eb500bd3d188b3c5ecf9a5feb7626cc27e75bb2da0dc152cde291b.jpeg",
-    "forum": "https://static.prod-images.emergentagent.com/jobs/9d5d6cbf-7076-41a9-9c9e-2df75d62b295/images/3c024e6a7edb7248cf9315dfdc6af14b80b556835c56e6be0e6087c2cd234436.jpeg",
-    "service": "https://static.prod-images.emergentagent.com/jobs/9d5d6cbf-7076-41a9-9c9e-2df75d62b295/images/9d83b7438eb5d953ccf07ad30df885d13e0fe91da7fae5bbf2dc12c4593942d5.jpeg",
+    "hero": "/images/hero.jpeg",
+    "president": "/images/president.jpeg",
+    "forum": "/images/forum.jpeg",
+    "service": "/images/service.jpeg",
+}
+LEGACY_IMAGE_FILES = {
+    "8bc40d98ee47ed75c6f33a5ba65b4157fa470b0e15ecc68021791868811b93f7.jpeg": IMAGE_URLS["hero"],
+    "0d5406ea66eb500bd3d188b3c5ecf9a5feb7626cc27e75bb2da0dc152cde291b.jpeg": IMAGE_URLS["president"],
+    "3c024e6a7edb7248cf9315dfdc6af14b80b556835c56e6be0e6087c2cd234436.jpeg": IMAGE_URLS["forum"],
+    "9d83b7438eb5d953ccf07ad30df885d13e0fe91da7fae5bbf2dc12c4593942d5.jpeg": IMAGE_URLS["service"],
 }
 RATE_LIMIT: dict[str, list[float]] = {}
-# Settings that must never reach anonymous visitors (internal recipients and Google file/calendar IDs).
-PRIVATE_SETTINGS = {"sheet_spreadsheet_id": "", "recap_spreadsheet_id": "", "calendar_id": "", "complaint_email": "", "complaint_whatsapp": "", "sheet_sync_enabled": False, "calendar_sync_enabled": False}
+PRIVATE_SETTINGS = {"complaint_whatsapp": ""}
+MONTHS = ["JAN", "FEB", "MAR", "APR", "MEI", "JUN", "JUL", "AGU", "SEP", "OKT", "NOV", "DES"]
+
+
+def fill_day_month(values: dict) -> dict:
+    try:
+        date = datetime.strptime(values.get("date", ""), "%Y-%m-%d")
+        values["day"], values["month"] = f"{date.day:02d}", MONTHS[date.month - 1]
+    except ValueError:
+        pass
+    return values
+
+
+async def migrate_image_urls() -> None:
+    for filename, image_url in LEGACY_IMAGE_FILES.items():
+        regex = re.escape(filename) + "$"
+        for field in ("hero_image_url", "hero_image_url_2", "hero_image_url_3", "hero_image_url_4"):
+            await db.site_settings.update_many({field: {"$regex": regex}}, {"$set": {field: image_url}})
+        for collection_name in ("news", "gallery", "cabinet"):
+            await db[collection_name].update_many({"image_url": {"$regex": regex}}, {"$set": {"image_url": image_url}})
+        await db.cabinet_archives.update_many(
+            {"members.image_url": {"$regex": regex}},
+            {"$set": {"members.$[member].image_url": image_url}},
+            array_filters=[{"member.image_url": {"$regex": regex}}],
+        )
 
 V1_SAMPLE_ROLES = ["Presiden Mahasiswa", "Wakil Presiden", "Sekretaris Jenderal", "Menteri Keuangan", "Menteri Advokasi", "Menteri PSDM", "Menteri Komunikasi", "Menteri Sosial Politik"]
 CABINET_SEED = [
@@ -96,6 +121,8 @@ async def ensure_seed() -> None:
         for title, date in (("Rapat Kerja Kabinet", "2026-02-14"), ("Kelas Advokasi Dasar", "2026-02-21"), ("Open Recruitment", "2026-03-01")):
             await db.agendas.update_one({"title_id": title, "date": {"$in": ["", None]}}, {"$set": {"date": date}})
         await db.agendas.update_many({"date": {"$exists": False}}, {"$set": {"date": "", "time_start": "", "time_end": ""}})
+    if meta.get("version", 1) < 4:
+        await migrate_image_urls()
     if meta.get("version", 1) < SEED_VERSION:
         await db.meta.update_one({"id": "seed"}, {"$set": {"version": SEED_VERSION}}, upsert=True)
 
@@ -125,7 +152,7 @@ async def get_news(slug: str):
 
 # ---------- Applications ----------
 @router.post("/applications", response_model=Application)
-async def create_application(payload: ApplicationCreate, request: Request, background: BackgroundTasks):
+async def create_application(payload: ApplicationCreate, request: Request):
     settings = await db.site_settings.find_one({"id": "main"}) or {}
     if not settings.get("registration_open", True):
         raise HTTPException(status_code=403, detail="Pendaftaran sedang ditutup")
@@ -141,8 +168,6 @@ async def create_application(payload: ApplicationCreate, request: Request, backg
     application = Application(**payload.model_dump(exclude={"captcha_answer"}), created_at=datetime.now(timezone.utc).isoformat())
     await db.applications.insert_one(application.model_dump())
     RATE_LIMIT[ip] = recent + [now]
-    if settings.get("sheet_sync_enabled") and settings.get("sheet_spreadsheet_id"):
-        background.add_task(append_application_row, application.id)
     return application
 
 
@@ -159,30 +184,11 @@ async def admin_applications(_: dict = Depends(require_superadmin)):
     return [Application(**doc) for doc in await db.applications.find().sort("created_at", -1).to_list(1000)]
 
 
-async def notify_status_change(application_id: str, status_url: str | None) -> None:
-    app_doc = await db.applications.find_one({"id": application_id})
-    if not app_doc:
-        return
-    settings = await db.site_settings.find_one({"id": "main"}) or {}
-    cabinet = f"{settings.get('cabinet_name', 'Kabinet Abisatya')} {settings.get('period', '')}".strip()
-    subject, html = status_email(app_doc["name"], app_doc["status"], cabinet, status_url)
-    try:
-        await send_email(to=app_doc["email"], subject=subject, html=html)
-        result = "Terkirim"
-    except Exception as exc:  # never fail the status update because of email
-        logger.error("Status email failed for %s: %s", application_id, exc)
-        result = f"Gagal ({exc})"
-    await db.applications.update_one({"id": application_id}, {"$set": {"email_notification": result, "notified_at": datetime.now(timezone.utc).isoformat()}})
-
-
 @router.put("/admin/applications/{application_id}", response_model=Application)
-async def update_application(application_id: str, payload: ApplicationStatusUpdate, request: Request, background: BackgroundTasks, admin: dict = Depends(require_superadmin)):
-    result = await db.applications.find_one_and_update({"id": application_id}, {"$set": {"status": payload.status, "email_notification": "Mengirim…"}}, return_document=ReturnDocument.AFTER)
+async def update_application(application_id: str, payload: ApplicationStatusUpdate, admin: dict = Depends(require_superadmin)):
+    result = await db.applications.find_one_and_update({"id": application_id}, {"$set": {"status": payload.status}}, return_document=ReturnDocument.AFTER)
     if not result:
         raise HTTPException(status_code=404, detail="Pendaftar tidak ditemukan")
-    origin = request.headers.get("origin", "")
-    status_url = f"{origin}/status/{application_id}" if origin.startswith("https://") else None
-    background.add_task(notify_status_change, application_id, status_url)
     await log_action(admin, "update_application", application_id)
     return Application(**result)
 
@@ -234,38 +240,32 @@ async def delete_news(news_id: str, admin: dict = Depends(require_superadmin)):
 
 
 # ---------- Generic CRUD: cabinet, programs, agendas, gallery ----------
-def register_collection(name: str, item_model: type[BaseModel], input_model: type[BaseModel], prepare=None, on_save=None, on_delete=None) -> None:
-    """Generic admin CRUD. Optional hooks: prepare(values) before write; on_save(id) / on_delete(doc) run as background tasks."""
+def register_collection(name: str, item_model: type[BaseModel], input_model: type[BaseModel], prepare=None) -> None:
+    """Generic admin CRUD with an optional payload preparation step."""
     collection = db[name]
 
     def values_of(payload: BaseModel) -> dict:
         values = payload.model_dump()
         return prepare(values) if prepare else values
 
-    async def create(payload: input_model, background: BackgroundTasks, admin: dict = Depends(require_superadmin)):  # type: ignore[valid-type]
+    async def create(payload: input_model, admin: dict = Depends(require_superadmin)):  # type: ignore[valid-type]
         item = item_model(**values_of(payload))
         await collection.insert_one(item.model_dump())
         await log_action(admin, f"create_{name}", item.id)
-        if on_save:
-            background.add_task(on_save, item.id)
         return item
 
-    async def update(item_id: str, payload: input_model, background: BackgroundTasks, admin: dict = Depends(require_superadmin)):  # type: ignore[valid-type]
+    async def update(item_id: str, payload: input_model, admin: dict = Depends(require_superadmin)):  # type: ignore[valid-type]
         result = await collection.find_one_and_update({"id": item_id}, {"$set": values_of(payload)}, return_document=ReturnDocument.AFTER)
         if not result:
             raise HTTPException(status_code=404, detail="Data tidak ditemukan")
         await log_action(admin, f"update_{name}", item_id)
-        if on_save:
-            background.add_task(on_save, item_id)
         return item_model(**result)
 
-    async def delete(item_id: str, background: BackgroundTasks, admin: dict = Depends(require_superadmin)):
+    async def delete(item_id: str, admin: dict = Depends(require_superadmin)):
         doc = await collection.find_one_and_delete({"id": item_id})
         if not doc:
             raise HTTPException(status_code=404, detail="Data tidak ditemukan")
         await log_action(admin, f"delete_{name}", item_id)
-        if on_delete:
-            background.add_task(on_delete, doc)
         return {"message": "Data dihapus"}
 
     router.add_api_route(f"/admin/{name}", create, methods=["POST"], response_model=item_model)
@@ -275,11 +275,7 @@ def register_collection(name: str, item_model: type[BaseModel], input_model: typ
 
 register_collection("cabinet", CabinetMember, CabinetInput)
 register_collection("programs", ProgramItem, ProgramInput)
-async def _delete_agenda_event(doc: dict) -> None:
-    await delete_event(doc.get("calendar_event_id", ""))
-
-
-register_collection("agendas", AgendaItem, AgendaInput, prepare=fill_day_month, on_save=sync_agenda, on_delete=_delete_agenda_event)
+register_collection("agendas", AgendaItem, AgendaInput, prepare=fill_day_month)
 register_collection("gallery", GalleryItem, GalleryInput)
 
 
@@ -290,24 +286,9 @@ async def get_admin_settings(_: dict = Depends(current_admin)):
 
 
 @router.put("/admin/settings", response_model=SiteSettings)
-async def update_settings(payload: SettingsUpdate, background: BackgroundTasks, admin: dict = Depends(require_superadmin)):
-    if payload.sheet_sync_enabled:
-        try:
-            payload.sheet_spreadsheet_id = await ensure_spreadsheet(payload.sheet_spreadsheet_id)
-        except ConnectorError as exc:
-            raise HTTPException(status_code=400, detail=f"Google Sheets: {exc}")
-    current = await db.site_settings.find_one({"id": "main"}) or {}
-    payload.recap_spreadsheet_id = current.get("recap_spreadsheet_id", "")  # managed by the recap job
-    turned_on = payload.calendar_sync_enabled and not current.get("calendar_sync_enabled")
-    if payload.calendar_sync_enabled:
-        try:
-            payload.calendar_id = await ensure_calendar(payload.calendar_id.strip())
-        except ConnectorError as exc:
-            raise HTTPException(status_code=400, detail=f"Google Calendar: {exc}")
+async def update_settings(payload: SettingsUpdate, admin: dict = Depends(require_superadmin)):
     result = await db.site_settings.find_one_and_update({"id": "main"}, {"$set": payload.model_dump()}, return_document=ReturnDocument.AFTER, upsert=True)
     await log_action(admin, "update_settings", "main")
-    if turned_on:
-        background.add_task(sync_all)
     return SiteSettings(**result)
 
 
@@ -376,29 +357,3 @@ async def delete_archive(archive_id: str, admin: dict = Depends(require_superadm
         raise HTTPException(status_code=404, detail="Arsip tidak ditemukan")
     await log_action(admin, "delete_archive", archive_id)
     return {"message": "Arsip dihapus"}
-
-
-@router.post("/admin/sheets/sync-all")
-async def sync_all_applications(admin: dict = Depends(require_superadmin)):
-    settings = await db.site_settings.find_one({"id": "main"}) or {}
-    if not settings.get("sheet_sync_enabled") or not settings.get("sheet_spreadsheet_id"):
-        raise HTTPException(status_code=400, detail="Aktifkan sinkron Google Sheets terlebih dahulu")
-    pending = await db.applications.find({"sheet_sync": {"$ne": "Tersinkron"}}).sort("created_at", 1).to_list(5000)
-    if pending:
-        try:
-            await append_rows(settings["sheet_spreadsheet_id"], pending)
-        except ConnectorError as exc:
-            raise HTTPException(status_code=400, detail=f"Google Sheets: {exc}")
-        await db.applications.update_many({"id": {"$in": [a["id"] for a in pending]}}, {"$set": {"sheet_sync": "Tersinkron"}})
-    await log_action(admin, "sheets_sync_all", str(len(pending)))
-    return {"synced": len(pending)}
-
-
-@router.post("/admin/calendar/sync-all")
-async def calendar_sync_all(admin: dict = Depends(require_superadmin)):
-    settings = await db.site_settings.find_one({"id": "main"}) or {}
-    if not settings.get("calendar_sync_enabled") or not settings.get("calendar_id"):
-        raise HTTPException(status_code=400, detail="Aktifkan sinkron Google Calendar terlebih dahulu")
-    results = await sync_all()
-    await log_action(admin, "calendar_sync_all", str(results))
-    return results

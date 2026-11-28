@@ -2,7 +2,7 @@
 
 Website resmi Badan Eksekutif Mahasiswa Fakultas Hukum Universitas Sali Al-Aitaam Bandung.
 
-Fitur utama: situs publik dua bahasa (Indonesia dan Inggris), berita, agenda, profil dan sejarah, kabinet dan arsip per periode, program kerja, galeri, pendaftaran anggota, serta layanan pengaduan rahasia atau anonim dengan kode pelacakan. Konten dikelola lewat panel admin (`/admin`) dengan peran superadmin dan satgas. Integrasi Google Sheets, Google Calendar, dan email bersifat opsional.
+Fitur utama: situs publik dua bahasa (Indonesia dan Inggris), berita, agenda, profil dan sejarah, kabinet dan arsip per periode, program kerja, galeri, pendaftaran anggota, serta layanan pengaduan rahasia atau anonim dengan kode pelacakan. Konten dikelola lewat panel admin (`/admin`) dengan peran superadmin dan satgas. Foto bawaan disimpan lokal di frontend; tindak lanjut pendaftar dan pengaduan dilakukan manual melalui WhatsApp.
 
 Teknologi: Python, FastAPI, MongoDB (Motor), React 19, Vite, TypeScript, Tailwind CSS v4.
 
@@ -74,22 +74,14 @@ cd ../frontend && yarn typecheck && yarn lint && yarn build
 - Jika akun superadmin terkunci, pemilik backend dapat menjalankan `cd backend && python -m scripts.reset_admin_credentials` pada lingkungan yang memiliki `MONGO_URL` produksi. Skrip menampilkan email akun superadmin yang ditemukan di database lokal, lalu meminta pilihan akun dan email baru. Sandi dimasukkan secara tersembunyi; konfirmasi `RESET` diperlukan dan semua sesi admin dicabut. Jangan gunakan sandi yang pernah dikirim melalui chat; buat sandi baru langsung saat prompt berjalan.
 - Atur `CORS_ORIGINS` ke origin frontend yang tepat, tanpa wildcard, misalnya `https://bem.example.id`.
 - Sajikan lewat HTTPS dan atur `COOKIE_SECURE=true`, termasuk bila TLS dihentikan di reverse proxy. Cookie admin memakai `HttpOnly` dan `SameSite=Lax`.
-- Batasi akses MongoDB dan simpan rahasia integrasi hanya di `backend/.env` (sudah masuk `.gitignore`).
+- Batasi akses MongoDB dan simpan konfigurasi backend hanya di `backend/.env` (sudah masuk `.gitignore`).
 
-## Integrasi opsional
+## Tindak lanjut manual
 
-Semua dikonfigurasi lewat `backend/.env` (lihat `.env.example`). Bila kosong, fitur terkait dinonaktifkan dengan pesan jelas dan situs tetap berjalan.
-
-- Email notifikasi: `EMERGENT_EMAIL_KEY`, `EMAIL_FROM_NAME`.
-- Google Sheets dan Calendar: `SHEETS_CONNECTION_ID`, `CALENDAR_CONNECTION_ID`, `EMERGENT_LLM_KEY`.
-- Rekap pengaduan bulanan: jadwalkan `POST /api/cron/complaint-recap` setiap tanggal 1 pukul 01.00 UTC (08.00 WIB) dengan header `Authorization: Bearer <WEBHOOK_CRON_SECRET>` dan `X-Webhook-Id` unik, misalnya lewat crontab:
-
-```
-0 1 1 * * curl -fsS -X POST -H "Authorization: Bearer $WEBHOOK_CRON_SECRET" -H "X-Webhook-Id: recap-$(date +\%Y\%m)" -H "Content-Type: application/json" -d '{}' https://domain-anda/api/cron/complaint-recap
-```
+Perubahan status pendaftaran dan laporan pengaduan tidak mengirim email otomatis. Admin dapat membuka pesan WhatsApp siap-kirim dari panel; pengiriman tetap dilakukan manual. Sinkronisasi Google Sheets/Calendar dan rekap pengaduan terjadwal tidak lagi tersedia. Field integrasi historis di MongoDB dibiarkan tersimpan tetapi tidak digunakan oleh aplikasi.
 
 Dokumentasi fitur, model data, dan endpoint ada di [memory/SPEC.md](memory/SPEC.md).
 
 ## Catatan gambar
 
-Foto awal (hero, forum, pengabdian) dimuat dari URL eksternal. Bila gagal dimuat, situs otomatis memakai `frontend/public/images/placeholder.svg`. Ganti foto lewat panel admin (unggah JPG, PNG, atau WEBP maksimal 5 MB).
+Foto bawaan (hero, presiden, forum, pengabdian) disimpan di `frontend/public/images/`; bila gambar gagal dimuat, situs otomatis memakai `frontend/public/images/placeholder.svg`. Backend memindahkan referensi seed lama ke file lokal saat startup. Ganti foto lewat panel admin (unggah JPG, PNG, atau WEBP maksimal 5 MB).

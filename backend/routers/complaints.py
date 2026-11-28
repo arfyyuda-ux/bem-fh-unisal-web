@@ -1,27 +1,22 @@
 import hashlib
-import hmac
-import logging
-import os
 import secrets
 import time
 import uuid
 from datetime import datetime, timezone
+from typing import get_args
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Request, Response, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Response, UploadFile
 from pydantic import ValidationError
 from pymongo import ReturnDocument
 
 from lib.db import db
-from lib.email import complaint_email, send_email
-from models.content import Complaint, ComplaintCreate, ComplaintHistoryEntry, ComplaintPublicStatus, ComplaintStats, ComplaintUpdate, CountItem, EvidenceFile, RecapRequest, RecapResult
-from lib.recap import CATEGORIES, STATUSES, previous_month, send_recap
-from lib.sheets import ConnectorError
+from models.content import Complaint, ComplaintCategory, ComplaintCreate, ComplaintHistoryEntry, ComplaintPublicStatus, ComplaintStats, ComplaintStatus, ComplaintUpdate, CountItem, EvidenceFile
 from routers.auth import client_ip, current_admin
 
-logger = logging.getLogger(__name__)
 router = APIRouter()
 RATE: dict[str, list[float]] = {}
+CATEGORIES = get_args(ComplaintCategory)
+STATUSES = get_args(ComplaintStatus)
 ALLOWED = {"image/jpeg", "image/png", "image/webp", "application/pdf", "video/mp4", "audio/mpeg", "audio/mp4"}
 MAX_FILES, MAX_SIZE = 3, 8 * 1024 * 1024
 
@@ -30,23 +25,8 @@ def _code() -> str:
     return "ADU-" + "".join(secrets.choice("ABCDEFGHJKLMNPQRSTUVWXYZ23456789") for _ in range(8))
 
 
-async def _notify(code: str, category: str, title: str, admin_url: str | None) -> None:
-    settings = await db.site_settings.find_one({"id": "main"}) or {}
-    to = settings.get("complaint_email", "")
-    if not to:
-        return
-    subject, html = complaint_email(code, category, title, admin_url)
-    try:
-        await send_email(to=to, subject=subject, html=html)
-        result = "Terkirim"
-    except Exception as exc:
-        logger.error("Complaint email failed for %s: %s", code, exc)
-        result = f"Gagal ({exc})"
-    await db.complaints.update_one({"code": code}, {"$set": {"email_notification": result}})
-
-
 @router.post("/complaints", response_model=ComplaintPublicStatus)
-async def create_complaint(request: Request, background: BackgroundTasks, payload: str = Form(...), files: list[UploadFile] = File(default=[])):
+async def create_complaint(request: Request, payload: str = Form(...), files: list[UploadFile] = File(default=[])):
     try:
         data = ComplaintCreate.model_validate_json(payload)
     except ValidationError as exc:
@@ -88,8 +68,6 @@ async def create_complaint(request: Request, background: BackgroundTasks, payloa
         for rate_key, stamps in list(RATE.items()):
             if not stamps or now - stamps[-1] >= 3600:
                 RATE.pop(rate_key, None)
-    origin = request.headers.get("origin", "")
-    background.add_task(_notify, complaint.code, complaint.category, complaint.title, f"{origin}/admin" if origin.startswith("https://") else None)
     return ComplaintPublicStatus(**complaint.model_dump())
 
 
@@ -158,46 +136,3 @@ async def complaint_stats(_: dict = Depends(current_admin)):
                           by_category=[CountItem(label=k, count=v) for k, v in cats.items()],
                           by_status=[CountItem(label=k, count=v) for k, v in stats.items()],
                           by_month=[CountItem(label=k, count=v) for k, v in months.items()])
-
-
-@router.post("/admin/complaints/recap", response_model=RecapResult)
-async def recap_now(payload: RecapRequest, admin: dict = Depends(current_admin)):
-    try:
-        result = await send_recap(payload.month or previous_month())
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc))
-    except ConnectorError as exc:
-        raise HTTPException(status_code=400, detail=f"Google Sheets: {exc}")
-    await db.audit_logs.insert_one({"id": str(uuid.uuid4()), "action": "complaint_recap", "target_id": result["month"], "actor": admin["email"], "created_at": datetime.now(timezone.utc).isoformat()})
-    return RecapResult(**result)
-
-
-async def _run_recap(run_id: str) -> None:
-    month = previous_month()
-    try:
-        result = await send_recap(month)
-        await db.cron_runs.update_one({"run_id": run_id}, {"$set": {"status": "done", "month": month, "total": result["total"]}})
-    except Exception as exc:
-        logger.error("Monthly recap failed: %s", exc)
-        await db.cron_runs.update_one({"run_id": run_id}, {"$set": {"status": f"failed: {exc}"}})
-
-
-@router.post("/cron/complaint-recap")
-async def cron_complaint_recap(request: Request, background: BackgroundTasks):
-    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
-    secret = os.environ.get("WEBHOOK_CRON_SECRET", "")
-    auth = request.headers.get("authorization", "")
-    if not secret or not auth.startswith("Bearer ") or not hmac.compare_digest(auth[7:], secret):
-        return JSONResponse(status_code=401, content={"detail": "unauthorized"})
-    try:
-        envelope = await request.json()
-    except Exception:
-        return JSONResponse(status_code=400, content={"detail": "invalid body"})
-    run_id = request.headers.get("x-webhook-id") or (envelope or {}).get("run_id") or ""
-    if not run_id:
-        return JSONResponse(status_code=400, content={"detail": "missing run id"})
-    if await db.cron_runs.find_one({"run_id": run_id}):
-        return {"status": "duplicate"}
-    await db.cron_runs.insert_one({"run_id": run_id, "job": "complaint-recap", "status": "queued", "created_at": datetime.now(timezone.utc).isoformat()})
-    background.add_task(_run_recap, run_id)
-    return {"status": "accepted"}

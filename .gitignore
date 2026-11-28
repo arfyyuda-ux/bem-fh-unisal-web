@@ -32,6 +32,8 @@ dist
 
 # Environment files (comprehensive coverage)
 /backend/.env
+MONGO_URL="mongodb://localhost:27017"
+
 
 *token.json*
 *credentials.json*
@@ -84,6 +86,3 @@ android-sdk/
 
 # Testing workspace artifacts
 /tests/test-results/
-
-# overlay black-box crash/user-report dumps — session data, never history
-**/.emergent/recordings/

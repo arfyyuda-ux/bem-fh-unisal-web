@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Archive as ArchiveIcon } from "lucide-react";
 import { apiGet } from "@/lib/api";
+import { resolveAssetUrl } from "@/lib/assets";
 import PublicPageHeader from "@/components/PublicPageHeader";
 import { initialsOf } from "@/lib/types";
 import type { CabinetArchive } from "@/lib/types";
@@ -20,7 +21,7 @@ export default function Archive() {
         {archives.map((a) => <article data-testid={`archive-${a.id}`} key={a.id}>
           <div className="flex flex-wrap items-end justify-between gap-3 border-b border-[#4A070E]/15 pb-5"><h2 className="font-display text-4xl text-[#4A070E]">{a.cabinet_name}</h2><span data-testid={`archive-period-${a.id}`} className="rounded-full bg-[#4A070E] px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-[#D4AF37]">Periode {a.period}</span></div>
           <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4 lg:grid-cols-5">{a.members.map((m, i) => <div data-testid={`archive-${a.id}-member-${i}`} key={i}>
-            <div className="aspect-[4/5] overflow-hidden bg-[#4A070E]">{m.image_url ? <img src={m.image_url} alt={m.name} loading="lazy" className="h-full w-full object-cover grayscale-[35%]" /> : <div className="flex h-full items-end bg-[radial-gradient(circle_at_70%_20%,#6b1019,#2d070d)] p-4 font-display text-5xl text-[#D4AF37]">{initialsOf(m.name)}</div>}</div>
+            <div className="aspect-[4/5] overflow-hidden bg-[#4A070E]">{m.image_url ? <img src={resolveAssetUrl(m.image_url)} alt={m.name} loading="lazy" className="h-full w-full object-cover grayscale-[35%]" /> : <div className="flex h-full items-end bg-[radial-gradient(circle_at_70%_20%,#6b1019,#2d070d)] p-4 font-display text-5xl text-[#D4AF37]">{initialsOf(m.name)}</div>}</div>
             <p className="mt-3 font-display text-lg text-[#4A070E]">{m.name}</p><p className="mt-0.5 text-[10px] font-bold uppercase leading-relaxed tracking-[0.12em] text-[#8b5b60]">{m.role_id}</p>
           </div>)}</div>
         </article>)}

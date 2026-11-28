@@ -1,10 +1,10 @@
 import type { CabinetMember, PublicContent } from "@/lib/types";
 
 // Static fallback so the page renders fully even when the backend is unreachable (static preview).
-const hero = "https://static.prod-images.emergentagent.com/jobs/9d5d6cbf-7076-41a9-9c9e-2df75d62b295/images/8bc40d98ee47ed75c6f33a5ba65b4157fa470b0e15ecc68021791868811b93f7.jpeg";
-const president = "https://static.prod-images.emergentagent.com/jobs/9d5d6cbf-7076-41a9-9c9e-2df75d62b295/images/0d5406ea66eb500bd3d188b3c5ecf9a5feb7626cc27e75bb2da0dc152cde291b.jpeg";
-const forum = "https://static.prod-images.emergentagent.com/jobs/9d5d6cbf-7076-41a9-9c9e-2df75d62b295/images/3c024e6a7edb7248cf9315dfdc6af14b80b556835c56e6be0e6087c2cd234436.jpeg";
-const service = "https://static.prod-images.emergentagent.com/jobs/9d5d6cbf-7076-41a9-9c9e-2df75d62b295/images/9d83b7438eb5d953ccf07ad30df885d13e0fe91da7fae5bbf2dc12c4593942d5.jpeg";
+const hero = `${import.meta.env.BASE_URL}images/hero.jpeg`;
+const president = `${import.meta.env.BASE_URL}images/president.jpeg`;
+const forum = `${import.meta.env.BASE_URL}images/forum.jpeg`;
+const service = `${import.meta.env.BASE_URL}images/service.jpeg`;
 
 const cabinetSeed: [string, string, string, CabinetMember["group"]][] = [
   ["Aulia Rahma", "Presiden Mahasiswa", "Student President", "Pimpinan"],
@@ -42,7 +42,7 @@ export const FALLBACK_CONTENT: PublicContent = {
       { title_id: "Tulus dalam melayani", title_en: "Serving with sincerity", desc_id: "Menjadikan keadilan terasa dekat bagi sesama.", desc_en: "Making justice feel closer to one another." },
       { title_id: "Tumbuh bersama", title_en: "Growing together", desc_id: "Merawat proses, bukan hanya mengejar hasil.", desc_en: "Caring for the process, not only the outcome." },
     ],
-    registration_open: true, sheet_sync_enabled: false, sheet_spreadsheet_id: "", complaint_email: "", complaint_whatsapp: "", recap_spreadsheet_id: "", calendar_sync_enabled: false, calendar_id: "",
+    registration_open: true, complaint_whatsapp: "",
     founded_year: "2010", history_is_draft: true,
     history_id: "Badan Eksekutif Mahasiswa Fakultas Hukum Universitas Sali Al-Aitaam lahir dari kebutuhan mahasiswa hukum akan wadah yang mampu menyuarakan aspirasi, mengawal kebijakan kampus, dan menghidupkan tradisi berpikir kritis.",
     history_en: "The Student Executive Board of the Faculty of Law, Universitas Sali Al-Aitaam was born from law students' need for a body that voices aspirations, oversees campus policy, and keeps critical thinking alive.",
@@ -55,9 +55,9 @@ export const FALLBACK_CONTENT: PublicContent = {
     { id: "n3", slug: "menyambut-semester-baru", category: "Kampus", title_id: "Menyambut Semester Baru dengan Energi Baru", title_en: "Welcoming a New Semester", excerpt_id: "Catatan awal tahun dari Presiden BEM untuk seluruh keluarga besar FH UNISAL.", excerpt_en: "A new-year note from the BEM President to the FH UNISAL community.", content_id: "Kita memulai tahun ini dengan keberanian untuk hadir, mendengar, dan bekerja bersama.", content_en: "We begin this year with the courage to show up, listen, and work together.", image_url: hero, published_at: "2026-01-05", read_minutes: 3, featured: false },
   ],
   agendas: [
-    { id: "a1", date: "2026-02-14", time_start: "", time_end: "", calendar_event_id: "", day: "14", month: "FEB", title_id: "Rapat Kerja Kabinet", title_en: "Cabinet Work Meeting", location_id: "Ruang Sidang FH", location_en: "Faculty Moot Court", type: "Agenda", order: 1 },
-    { id: "a2", date: "2026-02-21", time_start: "", time_end: "", calendar_event_id: "", day: "21", month: "FEB", title_id: "Kelas Advokasi Dasar", title_en: "Basic Advocacy Class", location_id: "Aula UNISAL", location_en: "UNISAL Hall", type: "Agenda", order: 2 },
-    { id: "a3", date: "2026-03-01", time_start: "", time_end: "", calendar_event_id: "", day: "01", month: "MAR", title_id: "Open Recruitment", title_en: "Open Recruitment", location_id: "Taman Kampus", location_en: "Campus Garden", type: "Agenda", order: 3 },
+    { id: "a1", date: "2026-02-14", time_start: "", time_end: "", day: "14", month: "FEB", title_id: "Rapat Kerja Kabinet", title_en: "Cabinet Work Meeting", location_id: "Ruang Sidang FH", location_en: "Faculty Moot Court", type: "Agenda", order: 1 },
+    { id: "a2", date: "2026-02-21", time_start: "", time_end: "", day: "21", month: "FEB", title_id: "Kelas Advokasi Dasar", title_en: "Basic Advocacy Class", location_id: "Aula UNISAL", location_en: "UNISAL Hall", type: "Agenda", order: 2 },
+    { id: "a3", date: "2026-03-01", time_start: "", time_end: "", day: "01", month: "MAR", title_id: "Open Recruitment", title_en: "Open Recruitment", location_id: "Taman Kampus", location_en: "Campus Garden", type: "Agenda", order: 3 },
   ],
   cabinet: cabinetSeed.map(([name, role_id, role_en, group], index) => ({ id: `c${index + 1}`, name, role_id, role_en, group, image_url: index === 0 ? president : "", order: index + 1 })),
   programs: [

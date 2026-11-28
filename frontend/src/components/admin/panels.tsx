@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Archive, BarChart3, ChevronDown, FileText, History, MessageCircle, Save, Sheet, Trash2, UserPlus } from "lucide-react";
+import { Archive, BarChart3, ChevronDown, FileText, History, MessageCircle, Save, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
 import { errorMessage } from "@/components/admin/editors";
 import { COMPLAINT_STATUSES } from "@/lib/types";
-import type { AdminRole, AdminUser, AdminUserCreate, CabinetArchive, Complaint, ComplaintStats, ComplaintUpdate, RecapResult, SiteSettings } from "@/lib/types";
+import type { AdminRole, AdminUser, AdminUserCreate, CabinetArchive, Complaint, ComplaintStats, ComplaintUpdate, SiteSettings } from "@/lib/types";
 
 const waNumber = (raw: string) => raw.replace(/\D/g, "").replace(/^0/, "62");
 
@@ -82,25 +82,6 @@ export function ComplaintStatsPanel() {
   </div>;
 }
 
-function RecapControl({ settings }: { settings: SiteSettings }) {
-  const queryClient = useQueryClient();
-  const now = new Date();
-  const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const [month, setMonth] = useState(`${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, "0")}`);
-  const recap = useMutation({
-    mutationFn: () => apiPost<RecapResult>("/admin/complaints/recap", { month }),
-    onSuccess: (r) => { toast.success(`Rekap ${r.month} ${r.updated ? "diperbarui" : "dikirim"} (${r.total} laporan)`); queryClient.invalidateQueries({ queryKey: ["public-content"] }); },
-    onError: (e) => toast.error(errorMessage(e, "Rekap gagal dikirim")),
-  });
-  return <div data-testid="complaint-recap-panel" className="mt-4 flex flex-wrap items-end gap-3 rounded border border-[#4A070E]/10 bg-white p-5 text-sm">
-    <Sheet size={18} className="mb-2 text-[#1f7a4d]" />
-    <div className="min-w-[220px] flex-1"><p className="font-semibold text-[#4A070E]">Rekap bulanan ke Google Sheets</p><p className="text-xs text-[#8b5b60]">Hanya berisi jumlah per kategori dan status, tanpa identitas atau isi laporan. Terkirim otomatis setiap tanggal 1 pukul 08.00 WIB.</p></div>
-    <label className="field-label">Bulan<input data-testid="complaint-recap-month-input" type="month" value={month} onChange={(e) => setMonth(e.target.value)} /></label>
-    <button data-testid="complaint-recap-send-button" disabled={recap.isPending} onClick={() => recap.mutate()} className="admin-primary">{recap.isPending ? "Mengirim…" : "Kirim rekap"}</button>
-    {settings.recap_spreadsheet_id && <a data-testid="complaint-recap-open-link" href={`https://docs.google.com/spreadsheets/d/${settings.recap_spreadsheet_id}/edit`} target="_blank" rel="noreferrer" className="admin-chip">Buka rekap</a>}
-  </div>;
-}
-
 export function UsersPanel({ me }: { me: string }) {
   const queryClient = useQueryClient();
   const [form, setForm] = useState<AdminUserCreate>({ email: "", password: "", role: "satgas" });
@@ -110,7 +91,7 @@ export function UsersPanel({ me }: { me: string }) {
   return <div data-testid="admin-users-panel">
     <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#a17b22]">Akses</p>
     <h1 className="mt-3 font-display text-5xl text-[#4A070E]">Pengguna admin.</h1>
-    <p className="mt-4 max-w-2xl text-sm text-[#8b5b60]"><b>Satgas</b> hanya bisa membuka menu Pengaduan beserta statistik dan rekapnya. Data pendaftar, konten, dan pengaturan tidak bisa mereka akses. <b>Superadmin</b> bisa membuka semua menu.</p>
+    <p className="mt-4 max-w-2xl text-sm text-[#8b5b60]"><b>Satgas</b> hanya bisa membuka menu Pengaduan beserta statistiknya. Data pendaftar, konten, dan pengaturan tidak bisa mereka akses. <b>Superadmin</b> bisa membuka semua menu.</p>
     <form data-testid="admin-user-create-form" onSubmit={(e) => { e.preventDefault(); create.mutate(); }} className="mt-8 grid gap-4 rounded bg-white p-6 sm:grid-cols-[1fr_1fr_160px_auto] sm:items-end">
       <label className="field-label">Email<input data-testid="admin-user-email-input" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label>
       <label className="field-label">Password awal (12–128)<input data-testid="admin-user-password-input" type="password" required minLength={12} maxLength={128} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></label>
@@ -128,9 +109,8 @@ export function ComplaintsPanel({ settings }: { settings: SiteSettings }) {
   return <div data-testid="admin-complaints-panel">
     <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#a17b22]">Rahasia</p>
     <h1 className="mt-3 font-display text-5xl text-[#4A070E]">Pengaduan.</h1>
-    <p className="mt-4 max-w-2xl text-sm text-[#8b5b60]">Email pemberitahuan dikirim otomatis ke {settings.complaint_email ? <b>{settings.complaint_email}</b> : "alamat yang diisi di Kontak & Akun (saat ini masih kosong)"}. Email itu tidak memuat identitas pelapor. Gunakan tombol WA untuk meneruskan ringkasan ke pengurus.</p>
+    <p className="mt-4 max-w-2xl text-sm text-[#8b5b60]">Tinjau dan perbarui status laporan di panel ini. Tombol WhatsApp menyiapkan ringkasan tanpa identitas pelapor untuk diteruskan secara manual.</p>
     <ComplaintStatsPanel />
-    <RecapControl settings={settings} />
     <div data-testid="admin-complaints-filters" className="mt-6 flex flex-wrap gap-2">{["Semua", "Aktif", ...COMPLAINT_STATUSES].map((f) => <button data-testid={`admin-complaints-filter-${f.toLowerCase()}`} key={f} onClick={() => setFilter(f)} className={`admin-chip ${filter === f ? "!bg-[#4A070E] !text-white" : ""}`}>{f}</button>)}</div>
     <div className="mt-6 space-y-3">{rows.map((c) => <ComplaintRow key={c.id} complaint={c} settings={settings} />)}{!rows.length && <p data-testid="admin-complaints-empty" className="rounded bg-white p-8 text-center text-sm text-[#8b5b60]">{query.isLoading ? "Memuat…" : "Belum ada laporan."}</p>}</div>
   </div>;

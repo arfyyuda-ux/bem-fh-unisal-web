@@ -1,4 +1,5 @@
-import { Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
+import { Route, Routes, useLocation } from "react-router-dom";
 import Home from "@/pages/Home";
 import NewsDetail from "@/pages/NewsDetail";
 import Admin from "@/pages/Admin";
@@ -10,20 +11,34 @@ import { AboutPage, ActivitiesPage, CabinetPage, NewsListingPage, RegistrationPa
 
 // One <Route> per page in src/pages; BrowserRouter already wraps this in main.tsx.
 export default function App() {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.hash) {
+      window.requestAnimationFrame(() => {
+        document.querySelector(location.hash)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [location.pathname, location.hash]);
+
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/tentang" element={<AboutPage />} />
-      <Route path="/kabinet" element={<CabinetPage />} />
-      <Route path="/kegiatan" element={<ActivitiesPage />} />
-      <Route path="/berita" element={<NewsListingPage />} />
-      <Route path="/pendaftaran" element={<RegistrationPage />} />
-      <Route path="/berita/:slug" element={<NewsDetail />} />
-      <Route path="/status/:id" element={<ApplicationStatus />} />
-      <Route path="/admin" element={<Admin />} />
-      <Route path="/pengaduan" element={<Complaint />} />
-      <Route path="/arsip" element={<Archive />} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <div key={`${location.pathname}${location.hash}`} className="route-transition">
+      <Routes location={location}>
+        <Route path="/" element={<Home />} />
+        <Route path="/tentang" element={<AboutPage />} />
+        <Route path="/kabinet" element={<CabinetPage />} />
+        <Route path="/kegiatan" element={<ActivitiesPage />} />
+        <Route path="/berita" element={<NewsListingPage />} />
+        <Route path="/pendaftaran" element={<RegistrationPage />} />
+        <Route path="/berita/:slug" element={<NewsDetail />} />
+        <Route path="/status/:id" element={<ApplicationStatus />} />
+        <Route path="/admin" element={<Admin />} />
+        <Route path="/pengaduan" element={<Complaint />} />
+        <Route path="/arsip" element={<Archive />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </div>
   );
 }

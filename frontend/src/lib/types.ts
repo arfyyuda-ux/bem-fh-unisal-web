@@ -39,13 +39,7 @@ export interface SettingsUpdate {
   vision_en: string;
   missions: Mission[];
   registration_open: boolean;
-  sheet_sync_enabled: boolean;
-  sheet_spreadsheet_id: string;
-  complaint_email: string;
   complaint_whatsapp: string;
-  recap_spreadsheet_id: string;
-  calendar_sync_enabled: boolean;
-  calendar_id: string;
   founded_year: string;
   history_is_draft: boolean;
   history_id: string;
@@ -92,7 +86,6 @@ export interface AgendaInput {
 }
 export interface AgendaItem extends AgendaInput {
   id: string;
-  calendar_event_id: string;
 }
 
 export type CabinetGroup = "Pimpinan" | "Kementerian";
@@ -159,9 +152,6 @@ export interface Application extends Omit<ApplicationPayload, "captcha_answer"> 
   id: string;
   status: ApplicationStatus;
   created_at: string;
-  email_notification: string;
-  notified_at: string;
-  sheet_sync: string;
 }
 
 export interface AdminUser {

@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowUpRight, Archive, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Linkedin, Mail, MapPin, Menu, UserRound, X } from "lucide-react";
 import { SiInstagram, SiX, SiYoutube } from "@icons-pack/react-simple-icons";
 import { apiGet } from "@/lib/api";
+import { resolveAssetUrl } from "@/lib/assets";
 import { FALLBACK_CONTENT } from "@/lib/content";
 import { PUBLIC_NAVIGATION } from "@/lib/navigation";
 import type { PublicContent } from "@/lib/types";
@@ -46,7 +47,7 @@ export default function Home() {
       ...FALLBACK_CONTENT.gallery.map((image) => image.image_url),
       ...FALLBACK_CONTENT.cabinet.filter((member) => member.image_url).map((member) => member.image_url),
     ];
-    return Array.from(new Set(candidates.filter((src) => src.trim()))).slice(0, 4);
+    return Array.from(new Set(candidates.filter((src) => src.trim()).map(resolveAssetUrl))).slice(0, 4);
   }, [content, s.hero_image_url, s.hero_image_url_2, s.hero_image_url_3, s.hero_image_url_4]);
   const homeNewsLimit = Math.min(12, Math.max(1, Math.trunc(s.home_news_limit || 4)));
   const homeNews = useMemo(
@@ -55,6 +56,16 @@ export default function Home() {
   );
   useEffect(() => { const onScroll = () => setScrolled(window.scrollY > 40); onScroll(); window.addEventListener("scroll", onScroll, { passive: true }); return () => window.removeEventListener("scroll", onScroll); }, []);
   useEffect(() => { localStorage.setItem("bem-language", language); document.documentElement.lang = language; }, [language]);
+  useEffect(() => {
+    const closeNavigation = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+        setDesktopNavigationOpen(null);
+      }
+    };
+    window.addEventListener("keydown", closeNavigation);
+    return () => window.removeEventListener("keydown", closeNavigation);
+  }, []);
   useEffect(() => {
     if (heroSlides.length < 2 || heroPaused || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const timer = window.setInterval(() => setHeroSlideIndex((index) => (index + 1) % heroSlides.length), 6000);
@@ -73,17 +84,17 @@ export default function Home() {
     <header data-testid="public-navbar" className={`fixed inset-x-0 top-0 z-50 border-b text-white transition-[background-color,border-color,backdrop-filter] duration-300 ${scrolled || menuOpen ? "border-white/10 bg-[#2d070d]/90 backdrop-blur-xl" : "border-transparent bg-transparent"}`}>
       <div className="mx-auto flex h-[76px] max-w-7xl items-center justify-between px-5 lg:px-10">
         <a data-testid="brand-home-link" href="#top" className="flex items-center gap-3">
-          <img data-testid="brand-logo" src={s.logo_url || "/logo-bem.png"} alt="Logo BEM FH UNISAL" className="h-11 w-11 object-contain" />
+          <img data-testid="brand-logo" src={resolveAssetUrl(s.logo_url || "/logo-bem.png")} alt="Logo BEM FH UNISAL" className="h-11 w-11 object-contain" />
           <span className="text-[10px] font-bold uppercase leading-tight tracking-[0.18em]">BEM FH<br /><span className="text-[#D4AF37]">UNISAL</span></span>
         </a>
-        <nav data-testid="desktop-navigation" className="hidden items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.14em] lg:flex">
+        <nav data-testid="desktop-navigation" className="hidden items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.14em] lg:flex">
           {PUBLIC_NAVIGATION.map((group) => <div key={group.id} className="relative" onMouseEnter={() => setDesktopNavigationOpen(group.id)} onMouseLeave={() => setDesktopNavigationOpen(null)} onFocus={() => setDesktopNavigationOpen(group.id)} onBlur={(event) => {
             if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDesktopNavigationOpen(null);
           }}>
-            <button data-testid={`nav-${group.id}-link`} type="button" aria-expanded={desktopNavigationOpen === group.id} onClick={() => setDesktopNavigationOpen(group.id)} className="flex items-center gap-1 rounded-full px-3 py-2 hover:bg-white/10 hover:text-[#D4AF37]">{group.label[language]}<ChevronDown size={12} /></button>
-            {desktopNavigationOpen === group.id && <div className="absolute left-0 top-full z-50 min-w-48 pt-2">
-              <div className="rounded-sm border border-white/10 bg-[#2d070d]/95 p-2 shadow-xl backdrop-blur-xl">
-                {group.items.map((item, index) => <Link data-testid={`nav-${group.id}-submenu-${index}`} key={item.to} to={item.to} onClick={() => setDesktopNavigationOpen(null)} className="block rounded px-3 py-2.5 text-xs tracking-normal text-white/75 hover:bg-white/10 hover:text-[#D4AF37]">{item.label[language]}</Link>)}
+            <button data-testid={`nav-${group.id}-link`} type="button" aria-expanded={desktopNavigationOpen === group.id} aria-haspopup="menu" onClick={() => setDesktopNavigationOpen(desktopNavigationOpen === group.id ? null : group.id)} className={`nav-top-link flex items-center gap-1 rounded-full px-3 py-2 hover:bg-white/10 hover:text-[#D4AF37] ${desktopNavigationOpen === group.id ? "is-open text-[#D4AF37]" : ""}`}>{group.label[language]}<ChevronDown size={12} className="nav-chevron" /></button>
+            {desktopNavigationOpen === group.id && <div role="menu" className="absolute left-0 top-full z-50 min-w-52 pt-2">
+              <div className="nav-dropdown rounded-sm border border-white/10 bg-[#2d070d]/95 p-2 shadow-[0_18px_45px_rgba(0,0,0,.28)] backdrop-blur-xl">
+                {group.items.map((item, index) => <Link role="menuitem" data-testid={`nav-${group.id}-submenu-${index}`} key={item.to} to={item.to} onClick={() => setDesktopNavigationOpen(null)} className="nav-dropdown-item block rounded px-3 py-2.5 text-xs tracking-normal text-white/75 hover:bg-white/10 hover:text-[#D4AF37]">{item.label[language]}<span aria-hidden="true" className="nav-dropdown-arrow">→</span></Link>)}
               </div>
             </div>}
           </div>)}
@@ -94,15 +105,15 @@ export default function Home() {
             <button data-testid="language-en-button" onClick={() => setLanguage("en")} className={`rounded-full px-2.5 py-1 ${language === "en" ? "bg-[#D4AF37] text-[#2d070d]" : "text-white/60"}`}>EN</button>
           </div>
           <Link data-testid="desktop-admin-link" to="/admin" aria-label={t.admin} title={t.admin} className="hidden h-10 w-10 items-center justify-center rounded-full border border-white/20 hover:border-[#D4AF37] hover:text-[#D4AF37] lg:flex"><UserRound size={17} /></Link>
-          <button data-testid="hamburger-menu-button" onClick={() => setMenuOpen(!menuOpen)} aria-label="Menu" aria-expanded={menuOpen} className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 hover:border-[#D4AF37] hover:text-[#D4AF37] lg:hidden">{menuOpen ? <X size={18} /> : <Menu size={18} />}</button>
+          <button data-testid="hamburger-menu-button" onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? (language === "id" ? "Tutup menu" : "Close menu") : (language === "id" ? "Buka menu" : "Open menu")} aria-expanded={menuOpen} className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 hover:border-[#D4AF37] hover:text-[#D4AF37] lg:hidden">{menuOpen ? <X size={18} /> : <Menu size={18} />}</button>
         </div>
       </div>
-      {menuOpen && <div data-testid="hamburger-menu-panel" className="absolute right-5 top-[84px] max-h-[calc(100vh-7rem)] w-[min(360px,calc(100vw-2.5rem))] overflow-y-auto rounded border border-white/10 bg-[#2d070d]/95 p-5 shadow-2xl backdrop-blur-xl lg:hidden">
+      {menuOpen && <div data-testid="hamburger-menu-panel" className="mobile-nav-enter absolute right-5 top-[84px] max-h-[calc(100vh-7rem)] w-[min(360px,calc(100vw-2.5rem))] overflow-y-auto rounded border border-white/10 bg-[#2d070d]/95 p-5 shadow-2xl backdrop-blur-xl lg:hidden">
         <nav className="flex flex-col text-xs font-semibold uppercase tracking-[0.2em]">
           {PUBLIC_NAVIGATION.map((group) => <details key={group.id} className="border-b border-white/10">
-            <summary data-testid={`menu-${group.id}-link`} className="cursor-pointer list-none py-3 hover:text-[#D4AF37]">{group.label[language]}</summary>
+            <summary data-testid={`menu-${group.id}-link`} className="mobile-nav-summary cursor-pointer list-none py-3 hover:text-[#D4AF37]"><span>{group.label[language]}</span><ChevronDown size={13} className="mobile-nav-chevron" /></summary>
             <div className="grid gap-1 pb-3 pl-3">
-              {group.items.map((item, index) => <Link data-testid={`menu-${group.id}-submenu-${index}`} key={item.to} to={item.to} onClick={() => setMenuOpen(false)} className="rounded px-3 py-2 text-xs font-medium normal-case tracking-normal text-white/65 hover:bg-white/10 hover:text-[#D4AF37]">{item.label[language]}</Link>)}
+              {group.items.map((item, index) => <Link data-testid={`menu-${group.id}-submenu-${index}`} key={item.to} to={item.to} onClick={() => setMenuOpen(false)} className="mobile-nav-item rounded px-3 py-2 text-xs font-medium normal-case tracking-normal text-white/65 hover:bg-white/10 hover:text-[#D4AF37]">{item.label[language]}<span aria-hidden="true">→</span></Link>)}
             </div>
           </details>)}
           <Link data-testid="menu-archive-link" to="/arsip" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 border-b border-white/10 py-3 hover:text-[#D4AF37]"><Archive size={13} />{language === "id" ? "Arsip kabinet" : "Cabinet archive"}</Link>
@@ -164,7 +175,7 @@ export default function Home() {
         <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[.8fr_1.2fr] lg:gap-16">
           <div className="reveal">
             <div className="relative overflow-hidden rounded-sm bg-[#4A070E]">
-              <img data-testid="about-image" src={content.gallery[0]?.image_url || s.hero_image_url || FALLBACK_CONTENT.settings.hero_image_url} alt={content.gallery[0] ? pick(language, content.gallery[0].caption_id, content.gallery[0].caption_en) : "Kegiatan BEM FH UNISAL"} loading="lazy" className="aspect-[4/5] w-full object-cover" />
+              <img data-testid="about-image" src={resolveAssetUrl(content.gallery[0]?.image_url || s.hero_image_url || FALLBACK_CONTENT.settings.hero_image_url)} alt={content.gallery[0] ? pick(language, content.gallery[0].caption_id, content.gallery[0].caption_en) : "Kegiatan BEM FH UNISAL"} loading="lazy" className="aspect-[4/5] w-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-[#2d070d]/80 via-transparent to-transparent" />
               <div className="absolute inset-x-0 bottom-0 p-6 text-white sm:p-8">
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#D4AF37]">{s.cabinet_name} · {s.period}</p>
@@ -193,7 +204,7 @@ export default function Home() {
           <div data-testid="news-list" className="grid content-start gap-6 md:grid-cols-2">
             {publicQuery.isLoading && Array.from({ length: 2 }).map((_, i) => <div data-testid={`news-skeleton-${i}`} key={i} className="h-80 animate-pulse bg-white/70" />)}
             {!publicQuery.isLoading && (homeNews.length ? homeNews.map((item, index) => <article data-testid={`news-card-${item.slug}`} key={item.id} className={`group overflow-hidden rounded-sm bg-white shadow-[0_15px_50px_rgba(74,7,14,.08)] ${index === 0 ? "md:col-span-2 md:grid md:grid-cols-2" : ""}`}>
-              <div className="overflow-hidden"><img data-testid={`news-image-${item.slug}`} src={item.image_url} alt={pick(language, item.title_id, item.title_en)} loading="lazy" className="h-56 w-full object-cover transition-transform duration-700 group-hover:scale-105 md:h-full" /></div>
+              <div className="overflow-hidden">              <img data-testid={`news-image-${item.slug}`} src={resolveAssetUrl(item.image_url)} alt={pick(language, item.title_id, item.title_en)} loading="lazy" className="h-56 w-full object-cover transition-transform duration-700 group-hover:scale-105 md:h-full" /></div>
               <div className="flex flex-col justify-center p-6 lg:p-8">
                 <div className="mb-5 flex flex-wrap items-center gap-3 text-[10px] font-bold uppercase tracking-[0.18em] text-[#9d7728]"><span>{item.category}</span><span className="h-1 w-1 rounded-full bg-[#D4AF37]" /><span>{formatDate(item.published_at, language)}</span><span className="h-1 w-1 rounded-full bg-[#D4AF37]" /><span>{item.read_minutes} min</span></div>
                 <h3 data-testid={`news-title-${item.slug}`} className="font-display text-3xl leading-tight text-[#4A070E]">{pick(language, item.title_id, item.title_en)}</h3>

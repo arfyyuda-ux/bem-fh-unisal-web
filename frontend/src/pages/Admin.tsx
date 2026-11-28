@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, CalendarCheck, Download, RefreshCw, Sheet, LogOut, MessageCircle, Plus, Save, Shield, Trash2, Users } from "lucide-react";
+import { ArrowLeft, Download, LogOut, MessageCircle, Plus, Save, Shield, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { apiGet, apiPost, apiPut } from "@/lib/api";
+import { resolveAssetUrl } from "@/lib/assets";
 import { CollectionEditor, errorMessage, FieldInput } from "@/components/admin/editors";
 import { ArchivePanel, ComplaintStatsPanel, ComplaintsPanel, UsersPanel } from "@/components/admin/panels";
 import type { Draft, FieldDef } from "@/components/admin/editors";
@@ -67,11 +68,6 @@ const HOME_FIELDS: FieldDef[] = [
 ];
 const REGISTRATION_FIELDS: FieldDef[] = [
   { key: "registration_open", label: "Pendaftaran dibuka (tampilkan bagian Bergabung di situs)", type: "checkbox", wide: true },
-  { key: "sheet_sync_enabled", label: "Kirim pendaftar baru otomatis ke Google Sheets", type: "checkbox", wide: true },
-  { key: "sheet_spreadsheet_id", label: "Google Spreadsheet (ID atau link)", wide: true, hint: "kosongkan lalu simpan untuk membuat spreadsheet baru otomatis" },
-];
-const CALENDAR_FIELDS: FieldDef[] = [
-  { key: "calendar_sync_enabled", label: "Sinkronkan agenda ke Google Calendar \"Agenda BEM FH UNISAL\"", type: "checkbox", wide: true },
 ];
 const CONTACT_FIELDS: FieldDef[] = [
   { key: "email", label: "Email publik", hint: "kosongkan untuk menyembunyikan" },
@@ -79,7 +75,7 @@ const CONTACT_FIELDS: FieldDef[] = [
   { key: "youtube", label: "YouTube URL", hint: "kosongkan untuk menyembunyikan" }, { key: "linkedin", label: "LinkedIn URL", hint: "kosongkan untuk menyembunyikan" },
   { key: "whatsapp", label: "WhatsApp", hint: "format 62812xxxx" }, { key: "google_form_url", label: "Google Form URL", hint: "kosongkan bila tidak dipakai" },
   { key: "address_id", label: "Alamat (ID)", wide: true, required: true }, { key: "address_en", label: "Address (EN)", wide: true },
-  { key: "complaint_email", label: "Email penerima laporan pengaduan", hint: "notifikasi otomatis tiap ada laporan baru" }, { key: "complaint_whatsapp", label: "WhatsApp penerima laporan", hint: "untuk tombol Teruskan ke WA, format 62812xxxx" },
+  { key: "complaint_whatsapp", label: "WhatsApp penerima laporan", hint: "untuk tombol Teruskan ke WA, format 62812xxxx" },
 ];
 
 const waNumber = (raw: string) => raw.replace(/\D/g, "").replace(/^0/, "62");
@@ -154,23 +150,13 @@ export default function Admin() {
   const logoutMutation = useMutation({ mutationFn: () => apiPost<{ message: string }>("/admin/logout"), onSettled: () => { queryClient.clear(); navigate("/"); } });
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: ApplicationStatus }) => apiPut<Application>(`/admin/applications/${id}`, { status }),
-    onSuccess: () => { toast.success("Status diperbarui, email notifikasi sedang dikirim"); queryClient.invalidateQueries({ queryKey: ["admin-applications"] }); },
+    onSuccess: () => { toast.success("Status pendaftaran diperbarui"); queryClient.invalidateQueries({ queryKey: ["admin-applications"] }); },
     onError: (error) => toast.error(errorMessage(error)),
   });
   const complaintsQuery = useQuery({ queryKey: ["admin-complaints"], queryFn: () => apiGet<Complaint[]>("/admin/complaints"), enabled: isLoggedIn });
   const activeComplaints = complaintsQuery.data?.filter((c) => c.status !== "Selesai").length ?? 0;
-  const syncAll = useMutation({
-    mutationFn: () => apiPost<{ synced: number }>("/admin/sheets/sync-all"),
-    onSuccess: (r) => { toast.success(`${r.synced} pendaftar dikirim ke Google Sheets`); queryClient.invalidateQueries({ queryKey: ["admin-applications"] }); },
-    onError: (error) => toast.error(errorMessage(error, "Sinkron gagal")),
-  });
   const data = publicQuery.data;
   const settings = settingsQuery.data;
-  const calendarSync = useMutation({
-    mutationFn: () => apiPost<Record<string, number>>("/admin/calendar/sync-all"),
-    onSuccess: (r) => { toast.success(`Kalender disinkronkan (${Object.entries(r).map(([k, v]) => `${k}: ${v}`).join(", ") || "tidak ada agenda bertanggal"})`); queryClient.invalidateQueries({ queryKey: ["public-content"] }); },
-    onError: (error) => toast.error(errorMessage(error, "Sinkron kalender gagal")),
-  });
   const cabinetLabel = settings ? `${settings.cabinet_name} ${settings.period}` : "Kabinet";
   const missingContacts = settings ? [!settings.email && "email", !settings.instagram && "Instagram", !settings.google_form_url && "Google Form"].filter(Boolean) : [];
 
@@ -189,7 +175,7 @@ export default function Admin() {
   return <main data-testid="admin-dashboard-page" className="min-h-screen bg-[#f5efe5] text-[#2d070d]">
     <header data-testid="admin-header" className="border-b border-[#4A070E]/10 bg-[#2d070d] px-5 py-4 text-white lg:px-10">
       <div className="mx-auto flex max-w-7xl items-center justify-between">
-        <div className="flex items-center gap-3"><img src={settings?.logo_url || "/logo-bem.png"} alt="" className="h-10 w-10 object-contain" /><div><p className="text-xs font-bold uppercase tracking-[0.18em]">Admin · {cabinetLabel}</p><p data-testid="admin-user-email" className="mt-1 text-[10px] text-white/50">{meQuery.data?.email}</p></div></div>
+        <div className="flex items-center gap-3"><img src={resolveAssetUrl(settings?.logo_url || "/logo-bem.png")} alt="" className="h-10 w-10 object-contain" /><div><p className="text-xs font-bold uppercase tracking-[0.18em]">Admin · {cabinetLabel}</p><p data-testid="admin-user-email" className="mt-1 text-[10px] text-white/50">{meQuery.data?.email}</p></div></div>
         <div className="flex items-center gap-5"><Link data-testid="admin-public-link" to="/" className="hidden items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-white/60 hover:text-[#D4AF37] sm:inline-flex"><Users size={13} />Lihat situs</Link><button data-testid="admin-logout-button" onClick={() => logoutMutation.mutate()} className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-white/60 hover:text-[#D4AF37]"><LogOut size={14} />Keluar</button></div>
       </div>
     </header>
@@ -222,26 +208,22 @@ export default function Admin() {
           {currentTab === "programs" && <CollectionEditor name="programs" title="Program kerja." eyebrow="Proker" items={data.programs} fields={PROGRAM_FIELDS}
             empty={{ number: "", title_id: "", title_en: "", description_id: "", description_en: "", status: "Segera", order: 0 }}
             rowTitle={(r) => `${r.number} · ${r.title_id}`} rowSub={(r) => String(r.status)} />}
-          {currentTab === "agendas" && <SettingsForm key="calendar" settings={settings} fields={CALENDAR_FIELDS} testId="admin-calendar-settings" title="" eyebrow={settings.calendar_sync_enabled ? "Google Calendar: tersinkron" : "Google Calendar: belum aktif"}>{() => settings.calendar_sync_enabled && settings.calendar_id ? <div data-testid="admin-calendar-panel" className="flex flex-wrap items-center gap-3 text-sm sm:col-span-2"><CalendarCheck size={18} className="text-[#1f7a4d]" /><span className="flex-1">Setiap agenda bertanggal otomatis masuk ke kalender, lengkap dengan pengingat 1 jam dan 1 hari sebelumnya.</span><a data-testid="admin-calendar-open-link" href={`https://calendar.google.com/calendar/r?cid=${encodeURIComponent(settings.calendar_id)}`} target="_blank" rel="noreferrer" className="admin-chip">Buka kalender</a><button type="button" data-testid="admin-calendar-sync-all-button" disabled={calendarSync.isPending} onClick={() => calendarSync.mutate()} className="admin-chip"><RefreshCw size={13} className={calendarSync.isPending ? "animate-spin" : ""} />Sinkronkan semua</button></div> : null}</SettingsForm>}
           {currentTab === "agendas" && <CollectionEditor name="agendas" title="Agenda." eyebrow="Kalender" items={data.agendas} fields={AGENDA_FIELDS}
             empty={{ date: today, time_start: "", time_end: "", day: "", month: "", title_id: "", title_en: "", location_id: "", location_en: "", type: "Agenda", order: 0 }}
-            rowTitle={(r) => String(r.title_id)} rowSub={(r) => `${r.date || `${r.day} ${r.month}`}${r.time_start ? ` · ${r.time_start}` : ""} · ${r.location_id}${r.calendar_event_id ? " · ✓ Google Calendar" : ""}`} />}
+            rowTitle={(r) => String(r.title_id)} rowSub={(r) => `${r.date || `${r.day} ${r.month}`}${r.time_start ? ` · ${r.time_start}` : ""} · ${r.location_id}`} />}
           {currentTab === "gallery" && <CollectionEditor name="gallery" title="Galeri." eyebrow="Dokumentasi" items={data.gallery} fields={GALLERY_FIELDS}
             empty={{ image_url: "", caption_id: "", caption_en: "", year: String(new Date().getFullYear()), order: 0 }}
             rowTitle={(r) => String(r.caption_id)} rowSub={(r) => String(r.year)} rowImage={(r) => String(r.image_url)} />}
           {currentTab === "applications" && <div>
             <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#a17b22]">Keanggotaan</p><h1 className="mt-3 font-display text-5xl text-[#4A070E]">Pendaftar.</h1></div><a data-testid="admin-export-button" href="/api/admin/applications/export" className="admin-chip"><Download size={14} />Export CSV / Excel</a></div>
             <SettingsForm key="registration" settings={settings} fields={REGISTRATION_FIELDS} testId="admin-registration-settings" title="" eyebrow={settings.registration_open ? "Status: pendaftaran DIBUKA" : "Status: pendaftaran DITUTUP"} />
-            {settings.sheet_sync_enabled && settings.sheet_spreadsheet_id && <div data-testid="admin-sheets-panel" className="mt-4 flex flex-wrap items-center gap-3 rounded bg-white p-4 text-sm"><Sheet size={18} className="text-[#1f7a4d]" /><span className="flex-1">Sinkron Google Sheets <b>aktif</b>. Setiap pendaftar baru otomatis ditambahkan.</span><a data-testid="admin-sheets-open-link" href={`https://docs.google.com/spreadsheets/d/${settings.sheet_spreadsheet_id}/edit`} target="_blank" rel="noreferrer" className="admin-chip">Buka spreadsheet</a><button data-testid="admin-sheets-sync-all-button" disabled={syncAll.isPending} onClick={() => syncAll.mutate()} className="admin-chip"><RefreshCw size={13} className={syncAll.isPending ? "animate-spin" : ""} />Kirim pendaftar yang belum tersinkron</button></div>}
-            <p className="mt-4 text-sm text-[#8b5b60]">Mengubah status otomatis mengirim email ke pendaftar. Tombol WhatsApp membuka pesan siap kirim.</p>
-            <div data-testid="admin-applications-table" className="mt-6 overflow-x-auto rounded bg-white"><table className="w-full min-w-[860px] text-left text-sm"><thead className="border-b border-[#4A070E]/10 text-[10px] uppercase tracking-widest text-[#8b5b60]"><tr><th className="p-4">Nama</th><th className="p-4">NIM</th><th className="p-4">Kementerian</th><th className="p-4">Status</th><th className="p-4">Email notifikasi</th><th className="p-4">Sheets</th><th className="p-4">WhatsApp</th></tr></thead><tbody>
+            <p className="mt-4 text-sm text-[#8b5b60]">Status dapat dilihat pendaftar melalui halaman cek status. Tombol WhatsApp membuka pesan siap kirim.</p>
+            <div data-testid="admin-applications-table" className="mt-6 overflow-x-auto rounded bg-white"><table className="w-full min-w-[740px] text-left text-sm"><thead className="border-b border-[#4A070E]/10 text-[10px] uppercase tracking-widest text-[#8b5b60]"><tr><th className="p-4">Nama</th><th className="p-4">NIM</th><th className="p-4">Kementerian</th><th className="p-4">Status</th><th className="p-4">WhatsApp</th></tr></thead><tbody>
               {applicationQuery.data?.map((item) => <tr data-testid={`admin-application-row-${item.id}`} key={item.id} className="border-b border-[#4A070E]/5 align-top">
                 <td className="p-4"><p className="font-semibold">{item.name}</p><p className="text-xs text-[#8b5b60]">{item.email}</p></td>
                 <td className="p-4">{item.nim}<p className="text-xs text-[#8b5b60]">Smt {item.semester}</p></td>
                 <td className="p-4">{item.department}</td>
                 <td className="p-4"><select data-testid={`admin-application-status-${item.id}`} value={item.status} disabled={statusMutation.isPending} onChange={(event) => statusMutation.mutate({ id: item.id, status: event.target.value as ApplicationStatus })} className="rounded border border-[#4A070E]/15 bg-transparent px-2 py-1 text-xs">{STATUSES.map((s) => <option key={s}>{s}</option>)}</select></td>
-                <td data-testid={`admin-application-email-status-${item.id}`} className="p-4 text-xs text-[#8b5b60]">{item.email_notification || "—"}</td>
-                <td data-testid={`admin-application-sheet-status-${item.id}`} className="p-4 text-xs text-[#8b5b60]">{item.sheet_sync || "—"}</td>
                 <td className="p-4"><a data-testid={`admin-application-whatsapp-${item.id}`} href={`https://wa.me/${waNumber(item.whatsapp)}?text=${encodeURIComponent(waMessage(item, cabinetLabel))}`} target="_blank" rel="noreferrer" className="admin-chip !bg-[#1f7a4d] !text-white"><MessageCircle size={13} />Kirim WA</a></td>
               </tr>)}
             </tbody></table>{!applicationQuery.data?.length && <p data-testid="admin-no-applications" className="p-8 text-center text-sm text-[#8b5b60]">Belum ada pendaftar.</p>}</div>
